@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        h2 { margin-bottom: 20px; }
+
+        .menu a {
+            display: block;
+            padding: 12px;
+            margin: 6px 0;
+            background: #1976d2;
+            color: white;
+            text-decoration: none;
+            width: 250px;
+            border-radius: 5px;
+        }
+
+        .menu a:hover {
+            background: #0d47a1;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Trang Quản Trị (Admin Dashboard)</h2>
+
+<div class="menu">
+    <a href="/admin/nhanvien">Quản lý Nhân viên</a>
+    <a href="/admin/calam">Quản lý Ca làm</a>
+    <a href="/admin/khachhang">Quản lý Khách hàng</a>
+    <a href="/admin/dichvu">Quản lý Dịch vụ</a>
+    <a href="/admin/lichhen">Quản lý Lịch hẹn</a>
+    <a href="/admin/hoadon">Quản lý Hóa đơn</a>
+
+    <!-- NHÓM CHỨC NĂNG THỐNG KÊ -->
+    <a href="/admin/thongke" class="button">📊 Thống kê doanh thu</a>
+    <a href="/admin/thongke/khachhang" class="button">👥 Thống kê khách hàng</a>
+
+    <a href="/logout">Đăng xuất</a>
+</div>
+
+</body>
+</html>

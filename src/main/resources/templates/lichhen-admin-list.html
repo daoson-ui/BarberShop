@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Danh sách Lịch hẹn (Admin)</title>
+
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        table, th, td { border: 1px solid #ddd; }
+        th, td { padding: 10px; text-align: left; }
+        th { background: #1976d2; color: white; }
+        a.button {
+            padding: 8px 12px;
+            background: #1976d2;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        a.button:hover { background: #0d47a1; }
+        h2 { color: #1976d2; }
+    </style>
+</head>
+
+<body>
+
+<h2>Danh sách Lịch hẹn (Admin)</h2>
+
+<!-- Admin KHÔNG được tạo lịch hẹn nên không có nút thêm -->
+
+<table>
+    <tr>
+        <th>Mã Lịch hẹn</th>
+        <th>Bắt đầu</th>
+        <th>Kết thúc</th>
+        <th>Khách hàng</th>
+        <th>Nhân viên</th>
+        <th>Dịch vụ</th>
+    </tr>
+
+    <tr th:each="lh : ${listLichHen}">
+        <td th:text="${lh.maLh}"></td>
+
+        <!-- Ngày giờ -->
+        <td th:text="${#temporals.format(lh.ngayGioBatDau, 'dd/MM/yyyy HH:mm')}"></td>
+        <td th:text="${#temporals.format(lh.ngayGioKetThuc, 'dd/MM/yyyy HH:mm')}"></td>
+
+        <!-- Khách hàng -->
+        <td th:text="${lh.khachHang != null ? lh.khachHang.hoTen : '---'}"></td>
+
+        <!-- Nhân viên -->
+        <td th:text="${lh.nhanVien != null ? lh.nhanVien.hoTen : '---'}"></td>
+
+        <!-- Dịch vụ -->
+        <td>
+            <span th:if="${#lists.isEmpty(mapDichVu[lh.maLh])}">
+                Không có
+            </span>
+
+            <span th:each="dv : ${mapDichVu[lh.maLh]}">
+                • <b th:text="${dv.dichVu.tenDv}"></b><br>
+            </span>
+        </td>
+    </tr>
+</table>
+
+<br>
+<a href="/admin/home" class="button">← Quay lại Dashboard</a>
+
+</body>
+</html>

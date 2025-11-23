@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Thêm Ca Làm</title>
+
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        form { width: 350px; }
+        label { display: block; margin-top: 10px; }
+        input {
+            width: 100%; padding: 8px; margin-top: 5px;
+            border-radius: 5px; border: 1px solid #aaa;
+        }
+        button {
+            margin-top: 15px; padding: 10px 15px;
+            background: #1976d2; color: white;
+            border: none; border-radius: 5px;
+        }
+        .error-box {
+            background: #ffdddd;
+            border-left: 4px solid red;
+            padding: 10px;
+            margin-bottom: 10px;
+            color: #a10000;
+        }
+        a.button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 8px 12px;
+            background: #1976d2;
+            color: white;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Thêm ca làm</h2>
+
+<!-- THÔNG BÁO LỖI -->
+<div th:if="${errorMessage}" class="error-box" th:text="${errorMessage}"></div>
+
+<form th:action="@{/admin/calam/add}" th:object="${caLam}" method="post">
+
+    <label>Mã ca:</label>
+    <input type="number" th:field="*{maCa}" required>
+
+    <label>Ngày làm việc:</label>
+    <input type="date" th:field="*{ngayLamViec}" required>
+
+    <label>Giờ bắt đầu:</label>
+    <input type="time" th:field="*{gioBatDau}" required>
+
+    <label>Giờ kết thúc:</label>
+    <input type="time" th:field="*{gioKetThuc}" required>
+
+    <button type="submit">Lưu</button>
+</form>
+
+<a href="/admin/calam" class="button">← Quay lại</a>
+
+</body>
+</html>

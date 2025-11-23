@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Danh sách Hóa đơn</title>
+
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        table, th, td { border: 1px solid #ddd; }
+        th, td { padding: 10px; text-align: left; }
+        th { background: #1976d2; color: white; }
+        a.button {
+            padding: 8px 12px; background: #1976d2; color: white;
+            text-decoration: none; border-radius: 5px;
+        }
+        .btn-delete { background: red !important; }
+    </style>
+</head>
+<body>
+
+<h2>Danh sách Hóa đơn</h2>
+
+<a class="button" href="/admin/hoadon/add">+ Tạo Hóa đơn</a>
+<br><br>
+
+<table>
+    <tr>
+        <th>Mã HĐ</th>
+        <th>Ngày thanh toán</th>
+        <th>Khách hàng</th>
+        <th>Dịch vụ</th>
+        <th>Tổng tiền</th>
+        <th>Phương thức TT</th>
+        <th>Thao tác</th>
+    </tr>
+
+    <tr th:each="hd : ${listHoaDon}">
+        <td th:text="${hd.maHd}"></td>
+
+        <td th:text="${#temporals.format(hd.ngayThanhToan, 'dd/MM/yyyy')}"></td>
+
+        <!-- CỘT KHÁCH HÀNG -->
+        <td th:text="${hd.lichHen.khachHang.hoTen}"></td>
+
+        <!-- CỘT DỊCH VỤ -->
+        <td>
+            <span th:each="dv : ${mapDichVu[hd.maHd]}">
+                <span th:text="${dv.dichVu.tenDv}"></span><br>
+            </span>
+        </td>
+
+        <td th:text="${#numbers.formatDecimal(hd.tongTien,0,'COMMA',0,'POINT')}"></td>
+
+        <td th:text="${hd.phuongThucTt}"></td>
+
+        <td>
+            <a class="button" th:href="@{'/admin/hoadon/edit/' + ${hd.maHd}}">Sửa</a>
+            <a class="button btn-delete"
+               th:href="@{'/admin/hoadon/delete/' + ${hd.maHd}}"
+               onclick="return confirm('Xóa hóa đơn này?')">Xóa</a>
+        </td>
+    </tr>
+</table>
+
+<br>
+<a href="/admin/home" class="button">← Quay lại Dashboard</a>
+
+</body>
+</html>

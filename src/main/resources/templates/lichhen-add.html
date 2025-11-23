@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Thêm Lịch hẹn</title>
+
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        form { width: 450px; }
+        label { margin-top: 10px; display: block; }
+        input, select {
+            width: 100%; padding: 8px; border: 1px solid #aaa; border-radius: 5px;
+        }
+        .dv-box {
+            border: 1px solid #ccc; padding: 10px;
+            border-radius: 5px; margin-top: 5px; max-height: 180px; overflow-y: auto;
+        }
+        button {
+            margin-top: 15px; padding: 10px 15px;
+            background: #1976d2; border: none; color: white;
+            border-radius: 5px; cursor: pointer;
+        }
+        a.button {
+            margin-top: 20px; display: inline-block; padding: 8px 12px;
+            background: #1976d2; color: white; border-radius: 5px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Thêm Lịch hẹn</h2>
+
+<form th:action="@{/user/lichhen/add}" th:object="${lichHen}" method="post">
+
+    <label>Ngày giờ bắt đầu:</label>
+    <input type="datetime-local" th:field="*{ngayGioBatDau}" required>
+
+    <label>Ngày giờ kết thúc:</label>
+    <input type="datetime-local" th:field="*{ngayGioKetThuc}" required>
+
+    <label>Khách hàng:</label>
+    <select th:field="*{khachHang.makh}" required>
+        <option value="">-- Chọn khách hàng --</option>
+        <option th:each="kh : ${listKhachHang}"
+                th:value="${kh.makh}"
+                th:text="${kh.hoTen}">
+        </option>
+    </select>
+
+    <label>Nhân viên:</label>
+    <select th:field="*{nhanVien.manv}" required>
+        <option value="">-- Chọn nhân viên --</option>
+        <option th:each="nv : ${listNhanVien}"
+                th:value="${nv.manv}"
+                th:text="${nv.hoTen}">
+        </option>
+    </select>
+
+    <label>Dịch vụ:</label>
+    <div class="dv-box">
+        <label th:each="dv : ${listDichVu}" style="display: block; margin-bottom: 5px;">
+            <input type="checkbox" name="dichVuIds" th:value="${dv.maDv}">
+            <span th:text="${dv.tenDv}"></span>
+            (<span th:text="${#numbers.formatDecimal(dv.gia,0,'COMMA',0,'POINT')}"></span> đ)
+        </label>
+    </div>
+
+    <button type="submit">Lưu</button>
+</form>
+
+<a href="/user/lichhen" class="button">← Quay lại</a>
+
+</body>
+</html>

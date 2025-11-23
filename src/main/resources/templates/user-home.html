@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>User Home</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f4f4;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            margin: 60px auto;
+            width: 500px;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 10px #ccc;
+        }
+
+        h2 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        p {
+            font-size: 16px;
+            margin-bottom: 25px;
+        }
+
+        a.button {
+            display: block;
+            width: 80%;
+            margin: 12px auto;
+            padding: 12px;
+            background: #1976d2;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 18px;
+        }
+
+        a.button:hover {
+            background: #0d47a1;
+        }
+
+        .btn-logout {
+            margin-top: 25px;
+            background: red !important;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <h2>Chào mừng Khách Hàng!</h2>
+
+    <p>Bạn đã đăng nhập thành công.</p>
+
+    <a class="button" href="/user/lichhen/add">➕ Đặt lịch hẹn</a>
+    <a class="button" href="/user/lichhen/list">📅 Danh sách lịch hẹn</a>
+    <a class="button" href="/user/profile">👤 Thông tin cá nhân</a>
+
+    <a class="button btn-logout" href="/logout">Đăng xuất</a>
+</div>
+
+</body>
+</html>

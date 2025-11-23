@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Danh sách khách hàng</title>
+
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        table, th, td { border: 1px solid #ddd; }
+        th { background: #1976d2; color: white; padding: 10px; }
+        td { padding: 10px; }
+
+        a.button, button {
+            padding: 8px 12px;
+            background: #1976d2;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            border: none;
+        }
+
+        .btn-delete { background: red !important; }
+    </style>
+</head>
+<body>
+
+<h2>Danh sách khách hàng</h2>
+
+<!-- Form tìm kiếm -->
+<form method="get" action="/admin/khachhang" style="margin-bottom: 15px;">
+    <input type="text" name="keyword"
+           th:value="${keyword}"
+           placeholder="Tìm theo tên hoặc số điện thoại"
+           style="padding: 8px; width: 260px; border-radius: 5px; border: 1px solid #ccc;">
+
+    <button type="submit">Tìm kiếm</button>
+    <a href="/admin/khachhang" class="button" style="background:#777;">Xóa lọc</a>
+</form>
+
+<a href="/admin/khachhang/add" class="button">+ Thêm khách hàng</a>
+
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Họ tên</th>
+        <th>Giới tính</th>
+        <th>Ngày sinh</th>
+        <th>SĐT</th>
+        <th>Thao tác</th>
+    </tr>
+
+    <tr th:each="kh : ${listKhachHang}">
+        <td th:text="${kh.makh}"></td>
+        <td th:text="${kh.hoTen}"></td>
+        <td th:text="${kh.gioiTinh}"></td>
+
+        <!-- Format ngày sinh -->
+        <td th:text="${kh.ngaySinh != null ? #temporals.format(kh.ngaySinh, 'dd/MM/yyyy') : '---'}"></td>
+
+        <td th:text="${kh.sdt}"></td>
+
+        <td>
+            <a class="button" th:href="@{'/admin/khachhang/edit/' + ${kh.makh}}">Sửa</a>
+
+            <a class="button btn-delete"
+               th:href="@{'/admin/khachhang/delete/' + ${kh.makh}}"
+               onclick="return confirm('Bạn chắc chắn muốn xóa?')">Xóa</a>
+        </td>
+    </tr>
+</table>
+
+<br>
+<a href="/admin/home" class="button">← Quay lại Dashboard</a>
+
+</body>
+</html>

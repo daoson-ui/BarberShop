@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Danh sách nhân viên</title>
+
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        h2 { margin-bottom: 20px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #1976d2;
+            color: white;
+        }
+
+        a.button, button {
+            padding: 8px 12px;
+            background: #1976d2;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+        }
+
+        a.button:hover, button:hover {
+            background: #0d47a1;
+        }
+
+        .btn-delete {
+            background: red !important;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Danh sách nhân viên</h2>
+
+<!-- Form tìm kiếm -->
+<form method="get" action="/admin/nhanvien" style="margin-bottom: 15px;">
+    <input type="text" name="keyword"
+           th:value="${keyword}"
+           placeholder="Tìm theo tên hoặc số điện thoại"
+           style="padding: 8px; width: 250px; border-radius: 5px; border: 1px solid #ccc;">
+
+    <button type="submit">Tìm kiếm</button>
+
+    <a href="/admin/nhanvien" class="button" style="background:#777;">Xóa lọc</a>
+</form>
+
+<a class="button" href="/admin/nhanvien/add">+ Thêm nhân viên</a>
+<br><br>
+
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Họ tên</th>
+        <th>SĐT</th>
+        <th>Giới tính</th>
+        <th>Chức vụ</th>
+        <th>Ngày sinh</th>
+        <th>Ngày vào làm</th>
+        <th>Lương cơ bản</th>
+        <th>Ca làm</th>
+        <th>Thao tác</th>
+    </tr>
+
+    <tr th:each="nv : ${listNhanVien}">
+        <td th:text="${nv.id}"></td>
+        <td th:text="${nv.hoTen}"></td>
+        <td th:text="${nv.sdt}"></td>
+        <td th:text="${nv.gioiTinh}"></td>
+
+        <td th:text="${nv.chucVu}"></td>
+
+        <td th:text="${nv.ngaySinh != null ? #temporals.format(nv.ngaySinh, 'dd/MM/yyyy') : '---'}"></td>
+
+        <td th:text="${nv.ngayVaoLam != null ? #temporals.format(nv.ngayVaoLam, 'dd/MM/yyyy') : '---'}"></td>
+
+        <td th:text="${#numbers.formatDecimal(nv.luongCoBan, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
+
+        <td th:text="${nv.caLam != null ? nv.caLam.tenCa : 'Chưa phân ca'}"></td>
+
+        <td>
+            <a class="button"
+               th:href="@{'/admin/nhanvien/edit/' + ${nv.id}}">Sửa</a>
+
+            <a class="button btn-delete"
+               th:href="@{'/admin/nhanvien/delete/' + ${nv.id}}"
+               onclick="return confirm('Bạn có chắc muốn xóa nhân viên này?')">Xóa</a>
+        </td>
+    </tr>
+</table>
+
+<br>
+<a href="/admin/home" class="button">← Quay lại Dashboard</a>
+
+</body>
+</html>
