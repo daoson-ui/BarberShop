@@ -2,88 +2,245 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Sửa Lịch hẹn</title>
+    <title>Cập nhật Lịch hẹn</title>
 
     <style>
-        body { font-family: Arial; padding: 20px; }
-        form { width: 450px; }
-        label { margin-top: 10px; display: block; }
+        body {
+            font-family: Arial;
+            background: #f4f4f4;
+            padding: 20px;
+        }
+
+        .container {
+            width: 480px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px #ccc;
+        }
+
+        h2 {
+            text-align: center;
+            color: #1976d2;
+            margin-bottom: 20px;
+        }
+
+        label {
+            margin-top: 12px;
+            display: block;
+            font-weight: bold;
+        }
+
         input, select {
-            width: 100%; padding: 8px; border: 1px solid #aaa; border-radius: 5px;
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #aaa;
+            border-radius: 5px;
         }
+
         .dv-box {
-            border: 1px solid #ccc; padding: 10px;
-            border-radius: 5px; margin-top: 5px;
-            max-height: 180px; overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            background: #fafafa;
+            margin-bottom: 12px;
         }
+
+        .alert-error {
+            background: #ffe0e0;
+            border: 1px solid #d40000;
+            color: #b30000;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .busy {
+            background: #ffcccc;
+            font-weight: bold;
+        }
+
+        .free {
+            background: #ccffcc;
+            font-weight: bold;
+        }
+
         button {
-            margin-top: 15px; padding: 10px 15px;
-            background: #1976d2; border: none; color: white;
-            border-radius: 5px; cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            padding: 12px;
+            background: #1976d2;
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
         }
+
         a.button {
-            margin-top: 20px; display: inline-block; padding: 8px 12px;
-            background: #1976d2; color: white; border-radius: 5px;
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 14px;
+            background: #1976d2;
+            color: white;
+            border-radius: 5px;
             text-decoration: none;
         }
     </style>
 </head>
+
 <body>
 
-<h2>Chỉnh sửa Lịch hẹn</h2>
+<div class="container"
+     th:data-current-time="${lichHen.gioHen}"
+     th:data-id="${lichHen.maLh}">
+    <h2>Cập nhật Lịch hẹn</h2>
 
-<form th:action="@{/user/lichhen/edit}" th:object="${lichHen}" method="post">
+    <div th:if="${errorMsg}" class="alert-error" th:text="${errorMsg}"></div>
 
-    <input type="hidden" th:field="*{maLh}">
+    <form th:action="@{/user/lichhen/edit}" method="post" id="editForm">
 
-    <label>Ngày giờ bắt đầu:</label>
-    <input type="datetime-local"
-           name="ngayGioBatDau"
-           th:value="${#temporals.format(lichHen.ngayGioBatDau, 'yyyy-MM-dd''T''HH:mm')}"
-           required />
+        <input type="hidden" name="maLh" th:value="${lichHen.maLh}"/>
 
-    <label>Ngày giờ kết thúc:</label>
-    <input type="datetime-local"
-           name="ngayGioKetThuc"
-           th:value="${#temporals.format(lichHen.ngayGioKetThuc, 'yyyy-MM-dd''T''HH:mm')}"
-           required />
+        <!-- Ngày -->
+        <label>Ngày hẹn:</label>
+        <input type="date" id="ngayHen" name="ngayHen"
+               th:value="${lichHen.ngayHen}" required />
 
-    <label>Khách hàng:</label>
-    <select th:field="*{khachHang.makh}" required>
-        <option value="">-- Chọn khách hàng --</option>
-        <option th:each="kh : ${listKhachHang}"
-                th:value="${kh.makh}"
-                th:text="${kh.hoTen}"
-                th:selected="${kh.makh == lichHen.khachHang.makh}">
-        </option>
-    </select>
+        <!-- Nhân viên -->
+        <label>Nhân viên:</label>
+        <select id="nhanVien" name="nhanVien" required>
+            <option value="">-- Chọn nhân viên --</option>
+            <option th:each="nv : ${listNhanVien}"
+                    th:value="${nv.manv}"
+                    th:text="${nv.hoTen}"
+                    th:selected="${nv.manv == lichHen.nhanVien.manv}">
+            </option>
+        </select>
 
-    <label>Nhân viên:</label>
-    <select th:field="*{nhanVien.manv}" required>
-        <option value="">-- Chọn nhân viên --</option>
-        <option th:each="nv : ${listNhanVien}"
-                th:value="${nv.manv}"
-                th:text="${nv.hoTen}"
-                th:selected="${nv.manv == lichHen.nhanVien.manv}">
-        </option>
-    </select>
+        <!-- Dịch vụ -->
+        <label>Dịch vụ:</label>
+        <div class="dv-box">
+            <label th:each="dv : ${listDichVu}">
+                <input type="checkbox"
+                       class="dv-check"
+                       name="dichVuChon"
+                       th:value="${dv.maDv}"
+                       th:checked="${selectedDvIds.contains(dv.maDv)}" />
+                <span th:text="${dv.tenDv}"></span>
+            </label>
+        </div>
 
-    <label>Dịch vụ:</label>
-    <div class="dv-box">
-        <label th:each="dv : ${listDichVu}" style="display:block; margin-bottom:5px;">
-            <input type="checkbox"
-                   name="dichVuIds"
-                   th:value="${dv.maDv}"
-                   th:checked="${selectedDvIds.contains(dv.maDv)}">
-            <span th:text="${dv.tenDv}"></span>
-            (<span th:text="${#numbers.formatDecimal(dv.gia,0,'COMMA',0,'POINT')}"></span> đ)
-        </label>
-    </div>
+        <!-- Giờ -->
+        <label>Giờ hẹn:</label>
+        <select id="gioHen" name="gioHen" disabled required>
+            <option value="">-- Chọn giờ --</option>
+        </select>
 
-    <button type="submit">Cập nhật</button>
-</form>
+        <button type="submit">💾 Cập nhật lịch hẹn</button>
+    </form>
 
-<a href="/user/lichhen" class="button">← Quay lại</a>
+    <a href="/user/home" class="button">← Quay lại</a>
+</div>
+
+<script>
+/* Normalize DB time (HH:mm:ss -> HH:mm) */
+function normalizeTime(t) {
+    if (!t) return '';
+    return t.length >= 5 ? t.substring(0,5) : t;
+}
+
+/* Kiểm tra điều kiện bật select giờ */
+function checkEnableTimeEdit() {
+    const date = document.getElementById('ngayHen').value;
+    const manv = document.getElementById('nhanVien').value;
+
+    let dvCount = 0;
+    document.querySelectorAll('.dv-check:checked').forEach(() => dvCount++);
+
+    const select = document.getElementById('gioHen');
+
+    if (date && manv && dvCount > 0) {
+        select.disabled = false;
+        loadTimeSlotsEdit();
+    } else {
+        select.disabled = true;
+        select.innerHTML = '<option value="">-- Chọn giờ --</option>';
+    }
+}
+
+/* Load giờ rảnh/bận, có excludeId để bỏ qua chính lịch đang sửa */
+async function loadTimeSlotsEdit() {
+    const ngay = document.getElementById('ngayHen').value;
+    const manv = document.getElementById('nhanVien').value;
+    const maLh = document.querySelector('.container').dataset.id;
+    if (!ngay || !manv) return;
+
+    const currentTime = normalizeTime(document.querySelector('.container').dataset.currentTime || '');
+
+    let dvIds = [];
+    document.querySelectorAll('.dv-check:checked').forEach(cb => dvIds.push(cb.value));
+
+    let url = `/user/lichhen/api/timeslots?manv=${manv}&ngay=${ngay}&excludeId=${maLh}`;
+    dvIds.forEach(id => url += `&dvIds[]=${id}`);
+
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+
+        const select = document.getElementById('gioHen');
+        select.innerHTML = '<option value="">-- Chọn giờ --</option>';
+
+        data.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.time;
+            if (item.busy) {
+                opt.textContent = `${item.time} (Bận)`;
+                opt.disabled = true;
+                opt.className = 'busy';
+            } else {
+                opt.textContent = item.time;
+                opt.className = 'free';
+            }
+
+            if (item.time === currentTime) opt.selected = true;
+            select.appendChild(opt);
+        });
+    } catch (e) {
+        console.error('loadTimeSlotsEdit error', e);
+    }
+}
+
+/* Event bindings */
+document.getElementById('ngayHen').addEventListener('change', checkEnableTimeEdit);
+document.getElementById('nhanVien').addEventListener('change', checkEnableTimeEdit);
+document.querySelectorAll('.dv-check').forEach(cb => cb.addEventListener('change', checkEnableTimeEdit));
+
+/* Khi mở trang edit: chờ DOM render xong, sau đó kiểm tra và load */
+window.addEventListener('load', () => {
+    // delay nhỏ để Thymeleaf đã đánh dấu checked cho checkbox
+    setTimeout(() => {
+        checkEnableTimeEdit(); // sẽ gọi loadTimeSlotsEdit nếu đủ điều kiện
+    }, 80);
+});
+
+/* Chặn chỉnh sửa về quá khứ */
+document.getElementById('editForm').addEventListener('submit', function(e) {
+    const d = document.getElementById('ngayHen').value;
+    const t = document.getElementById('gioHen').value;
+    if (!d || !t) return;
+    const selected = new Date(d + 'T' + t);
+    if (selected < new Date()) {
+        e.preventDefault();
+        alert('❌ Không thể chỉnh sửa về quá khứ!');
+    }
+});
+</script>
 
 </body>
 </html>

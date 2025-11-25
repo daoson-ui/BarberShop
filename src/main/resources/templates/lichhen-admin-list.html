@@ -5,20 +5,79 @@
     <title>Danh sách Lịch hẹn (Admin)</title>
 
     <style>
-        body { font-family: Arial; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        table, th, td { border: 1px solid #ddd; }
-        th, td { padding: 10px; text-align: left; }
-        th { background: #1976d2; color: white; }
-        a.button {
-            padding: 8px 12px;
+        body { 
+            font-family: Arial; 
+            padding: 20px; 
+            background: #f4f4f4;
+        }
+
+        h2 { 
+            color: #1976d2; 
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            background: white;
+        }
+
+        table, th, td { 
+            border: 1px solid #ddd; 
+        }
+
+        th, td { 
+            padding: 12px; 
+        }
+
+        th { 
+            background: #1976d2; 
+            color: white; 
+        }
+
+        .btn {
+            padding: 6px 10px;
+            border-radius: 6px;
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+        }
+
+        .btn-delete { background: #d9534f; }
+        .btn-delete:hover { background: #b52b27; }
+
+        .alert {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .alert-success {
+            background: #e0ffe6;
+            border: 1px solid #009933;
+            color: #006622;
+        }
+
+        .alert-error {
+            background: #ffe0e0;
+            border: 1px solid #cc0000;
+            color: #990000;
+        }
+
+        .back-btn {
+            margin-top: 20px;
+            display: inline-block;
+            padding: 10px 14px;
             background: #1976d2;
             color: white;
+            border-radius: 6px;
             text-decoration: none;
-            border-radius: 5px;
         }
-        a.button:hover { background: #0d47a1; }
-        h2 { color: #1976d2; }
+
+        .back-btn:hover { background: #0d47a1; }
     </style>
 </head>
 
@@ -26,32 +85,30 @@
 
 <h2>Danh sách Lịch hẹn (Admin)</h2>
 
-<!-- Admin KHÔNG được tạo lịch hẹn nên không có nút thêm -->
+<!-- Thông báo -->
+<div th:if="${successMsg}" class="alert alert-success" th:text="${successMsg}"></div>
+<div th:if="${errorMsg}" class="alert alert-error" th:text="${errorMsg}"></div>
 
 <table>
     <tr>
-        <th>Mã Lịch hẹn</th>
-        <th>Bắt đầu</th>
-        <th>Kết thúc</th>
+        <th>Mã</th>
+        <th>Khung giờ</th>
         <th>Khách hàng</th>
         <th>Nhân viên</th>
         <th>Dịch vụ</th>
+        <th>Thao tác</th>
     </tr>
 
     <tr th:each="lh : ${listLichHen}">
         <td th:text="${lh.maLh}"></td>
 
-        <!-- Ngày giờ -->
         <td th:text="${#temporals.format(lh.ngayGioBatDau, 'dd/MM/yyyy HH:mm')}"></td>
-        <td th:text="${#temporals.format(lh.ngayGioKetThuc, 'dd/MM/yyyy HH:mm')}"></td>
 
-        <!-- Khách hàng -->
-        <td th:text="${lh.khachHang != null ? lh.khachHang.hoTen : '---'}"></td>
+        <td th:text="${lh.khachHang != null ? lh.khachHang.hoTen : 'Không có'}"></td>
 
-        <!-- Nhân viên -->
-        <td th:text="${lh.nhanVien != null ? lh.nhanVien.hoTen : '---'}"></td>
+        <td th:text="${lh.nhanVien != null ? lh.nhanVien.hoTen : 'Không có'}"></td>
 
-        <!-- Dịch vụ -->
+
         <td>
             <span th:if="${#lists.isEmpty(mapDichVu[lh.maLh])}">
                 Không có
@@ -61,11 +118,24 @@
                 • <b th:text="${dv.dichVu.tenDv}"></b><br>
             </span>
         </td>
+
+        <td>
+            <a th:href="@{'/admin/lichhen/delete/' + ${lh.maLh}}"
+               class="btn btn-delete"
+               onclick="return confirm('Bạn có chắc muốn xóa lịch hẹn này?')">
+                🗑 Xóa
+            </a>
+        </td>
     </tr>
 </table>
 
-<br>
-<a href="/admin/home" class="button">← Quay lại Dashboard</a>
+<a href="/admin/home" class="back-btn">← Quay lại Dashboard</a>
+
+<script>
+setTimeout(() => {
+    document.querySelectorAll(".alert").forEach(a => a.style.display = 'none');
+}, 2000);
+</script>
 
 </body>
 </html>

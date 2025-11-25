@@ -5,71 +5,218 @@
     <title>Thêm Lịch hẹn</title>
 
     <style>
-        body { font-family: Arial; padding: 20px; }
-        form { width: 450px; }
-        label { margin-top: 10px; display: block; }
+        body {
+            font-family: Arial;
+            background: #f5f5f5;
+            padding: 30px;
+        }
+
+        .container {
+            width: 450px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px #ccc;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: bold;
+            margin-top: 10px;
+            display: block;
+        }
+
         input, select {
-            width: 100%; padding: 8px; border: 1px solid #aaa; border-radius: 5px;
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
         }
+
         .dv-box {
-            border: 1px solid #ccc; padding: 10px;
-            border-radius: 5px; margin-top: 5px; max-height: 180px; overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 6px;
+            max-height: 180px;
+            overflow-y: auto;
+            background: #fafafa;
+            margin-bottom: 15px;
         }
+
         button {
-            margin-top: 15px; padding: 10px 15px;
-            background: #1976d2; border: none; color: white;
-            border-radius: 5px; cursor: pointer;
+            width: 100%;
+            padding: 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 15px;
+            cursor: pointer;
         }
-        a.button {
-            margin-top: 20px; display: inline-block; padding: 8px 12px;
-            background: #1976d2; color: white; border-radius: 5px;
+
+        .button {
+            display: block;
+            text-align: center;
+            padding: 10px;
+            margin-top: 15px;
+            border-radius: 6px;
+            background: #555;
+            color: white;
             text-decoration: none;
         }
+
+        .alert-error {
+            color: red;
+            margin-bottom: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* giờ bận */
+        .busy {
+            background: #ffcccc;
+            color: #555;
+            font-weight: bold;
+        }
+
+        /* giờ rảnh */
+        .free {
+            background: #ccffcc;
+            font-weight: bold;
+        }
+
     </style>
 </head>
 <body>
 
-<h2>Thêm Lịch hẹn</h2>
+<div class="container">
+    <h2>Thêm Lịch hẹn</h2>
 
-<form th:action="@{/user/lichhen/add}" th:object="${lichHen}" method="post">
+    <div th:if="${errorMsg}" class="alert-error" th:text="${errorMsg}"></div>
 
-    <label>Ngày giờ bắt đầu:</label>
-    <input type="datetime-local" th:field="*{ngayGioBatDau}" required>
+    <form th:action="@{/user/lichhen/save}" method="post" id="addForm">
 
-    <label>Ngày giờ kết thúc:</label>
-    <input type="datetime-local" th:field="*{ngayGioKetThuc}" required>
+        <!-- Ngày hẹn -->
+        <label>Ngày hẹn</label>
+        <input type="date" name="ngayHen" id="ngayHen" required/>
 
-    <label>Khách hàng:</label>
-    <select th:field="*{khachHang.makh}" required>
-        <option value="">-- Chọn khách hàng --</option>
-        <option th:each="kh : ${listKhachHang}"
-                th:value="${kh.makh}"
-                th:text="${kh.hoTen}">
-        </option>
-    </select>
+        <!-- Nhân viên -->
+        <label>Nhân viên:</label>
+        <select name="manv" id="manv" required>
+            <option value="">-- Chọn nhân viên --</option>
+            <option th:each="nv : ${listNhanVien}"
+                    th:value="${nv.manv}"
+                    th:text="${nv.hoTen}">
+            </option>
+        </select>
 
-    <label>Nhân viên:</label>
-    <select th:field="*{nhanVien.manv}" required>
-        <option value="">-- Chọn nhân viên --</option>
-        <option th:each="nv : ${listNhanVien}"
-                th:value="${nv.manv}"
-                th:text="${nv.hoTen}">
-        </option>
-    </select>
+        <!-- Dịch vụ -->
+        <label>Dịch vụ:</label>
+        <div class="dv-box">
+            <label th:each="dv : ${listDichVu}" style="display:block; margin-bottom:5px;">
+                <input type="checkbox" name="dichVuChon" id="dvIds"
+                       th:value="${dv.maDv}"/>
+                <span th:text="${dv.tenDv}"></span>
+            </label>
+        </div>
 
-    <label>Dịch vụ:</label>
-    <div class="dv-box">
-        <label th:each="dv : ${listDichVu}" style="display: block; margin-bottom: 5px;">
-            <input type="checkbox" name="dichVuIds" th:value="${dv.maDv}">
-            <span th:text="${dv.tenDv}"></span>
-            (<span th:text="${#numbers.formatDecimal(dv.gia,0,'COMMA',0,'POINT')}"></span> đ)
-        </label>
-    </div>
+        <!-- Giờ hẹn -->
+        <label>Giờ hẹn</label>
+        <select name="gioHen" id="gioHen" required>
+            <option value="">-- Chọn giờ --</option>
+        </select>
 
-    <button type="submit">Lưu</button>
-</form>
+        <button type="submit">💾 Đặt lịch hẹn</button>
+    </form>
 
-<a href="/user/lichhen" class="button">← Quay lại</a>
+    <a href="/user/home" class="button">← Quay lại</a>
+</div>
+
+<script>
+
+/* =========================================================
+   HÀM TẢI DANH SÁCH GIỜ RẢNH TỪ BACKEND
+========================================================= */
+async function loadTimeSlots() {
+
+    const ngay = document.getElementById('ngayHen').value;
+    const manv = document.getElementById('manv').value;
+
+    if (!ngay || !manv) return;
+
+    let dvIds = [];
+    document.querySelectorAll("input[name='dichVuChon']:checked").forEach(cb => {
+        dvIds.push(cb.value);
+    });
+
+    // build URL
+    let url = `/user/lichhen/api/timeslots?manv=${manv}&ngay=${ngay}`;
+
+    dvIds.forEach(id => {
+        url += `&dvIds[]=${id}`;
+    });
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    const select = document.getElementById('gioHen');
+    select.innerHTML = '';
+
+    data.forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item.time;
+
+        if (item.busy) {
+            opt.textContent = `${item.time} (Bận)`;
+            opt.classList.add("busy");
+            opt.disabled = true;
+        } else {
+            opt.textContent = `${item.time}`;
+            opt.classList.add("free");
+        }
+
+        select.appendChild(opt);
+    });
+}
+
+/* =========================================================
+   SỰ KIỆN TỰ ĐỘNG LOAD GIỜ RẢNH
+========================================================= */
+document.getElementById('ngayHen').addEventListener('change', loadTimeSlots);
+document.getElementById('manv').addEventListener('change', loadTimeSlots);
+
+// Khi chọn dịch vụ
+document.querySelectorAll("input[name='dichVuChon']").forEach(cb => {
+    cb.addEventListener("change", loadTimeSlots);
+});
+
+/* =========================================================
+   CHẶN ĐẶT LỊCH QUÁ KHỨ
+========================================================= */
+document.getElementById('addForm').addEventListener('submit', function (e) {
+
+    const date = document.getElementById('ngayHen').value;
+    const time = document.getElementById('gioHen').value;
+
+    if (!date || !time) return;
+
+    const selected = new Date(date + "T" + time);
+    const now = new Date();
+
+    if (selected < now) {
+        e.preventDefault();
+        alert("❌ Không thể đặt lịch trong quá khứ!");
+    }
+});
+
+</script>
 
 </body>
 </html>

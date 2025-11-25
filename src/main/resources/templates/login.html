@@ -50,6 +50,13 @@
             text-align: center;
             margin-top: 12px;
             text-decoration: none;
+            color: #1976d2;
+        }
+        .success {
+            color: green;
+            text-align: center;
+            margin-bottom: 10px;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -58,9 +65,14 @@
 <div class="login-box">
     <h2>Đăng nhập</h2>
 
-    <!-- Hiển thị lỗi nếu có -->
+    <!-- lỗi đăng nhập -->
     <div th:if="${param.error}" class="error">
         Sai tài khoản hoặc mật khẩu!
+    </div>
+
+    <!-- 🔥 thông báo đăng ký thành công -->
+    <div th:if="${param.success}" class="success">
+        🎉 Tạo tài khoản thành công! Bạn có thể đăng nhập ngay.
     </div>
 
     <form method="post" action="/login">
@@ -69,9 +81,9 @@
         <button type="submit">Đăng nhập</button>
     </form>
 
-    <a href="#">Quên mật khẩu?</a>
-    <a href="#">Tạo tài khoản mới</a>
+    <a th:href="@{/register}">Tạo tài khoản mới</a>
 </div>
+
 
 </body>
 </html>

@@ -1,7 +1,8 @@
 package com.barbershop.entity;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @Entity
@@ -13,11 +14,12 @@ public class LichHen {
     @Column(name = "ma_lh")
     private Integer maLh;
 
-    @Column(name = "ngay_gio_bat_dau")
-    private LocalDateTime ngayGioBatDau;
+    // TÁCH thành 2 cột: ngay_hen (DATE), gio_hen (TIME)
+    @Column(name = "ngay_hen")
+    private LocalDate ngayHen;
 
-    @Column(name = "ngay_gio_ket_thuc")
-    private LocalDateTime ngayGioKetThuc;
+    @Column(name = "gio_hen")
+    private LocalTime gioHen;
 
     @ManyToOne
     @JoinColumn(name = "makh")
@@ -30,53 +32,22 @@ public class LichHen {
     @OneToMany(mappedBy = "lichHen", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<LichHenDichVu> dichVus;
 
-    // ========== GETTER – SETTER ==========
+    // getters / setters
+    public Integer getMaLh() { return maLh; }
+    public void setMaLh(Integer maLh) { this.maLh = maLh; }
 
-    public Integer getMaLh() {
-        return maLh;
-    }
+    public LocalDate getNgayHen() { return ngayHen; }
+    public void setNgayHen(LocalDate ngayHen) { this.ngayHen = ngayHen; }
 
-    public void setMaLh(Integer maLh) {
-        this.maLh = maLh;
-    }
+    public LocalTime getGioHen() { return gioHen; }
+    public void setGioHen(LocalTime gioHen) { this.gioHen = gioHen; }
 
-    public LocalDateTime getNgayGioBatDau() {
-        return ngayGioBatDau;
-    }
+    public KhachHang getKhachHang() { return khachHang; }
+    public void setKhachHang(KhachHang khachHang) { this.khachHang = khachHang; }
 
-    public void setNgayGioBatDau(LocalDateTime ngayGioBatDau) {
-        this.ngayGioBatDau = ngayGioBatDau;
-    }
+    public NhanVien getNhanVien() { return nhanVien; }
+    public void setNhanVien(NhanVien nhanVien) { this.nhanVien = nhanVien; }
 
-    public LocalDateTime getNgayGioKetThuc() {
-        return ngayGioKetThuc;
-    }
-
-    public void setNgayGioKetThuc(LocalDateTime ngayGioKetThuc) {
-        this.ngayGioKetThuc = ngayGioKetThuc;
-    }
-
-    public KhachHang getKhachHang() {
-        return khachHang;
-    }
-
-    public void setKhachHang(KhachHang khachHang) {
-        this.khachHang = khachHang;
-    }
-
-    public NhanVien getNhanVien() {
-        return nhanVien;
-    }
-
-    public void setNhanVien(NhanVien nhanVien) {
-        this.nhanVien = nhanVien;
-    }
-
-    public List<LichHenDichVu> getDichVus() {
-        return dichVus;
-    }
-
-    public void setDichVus(List<LichHenDichVu> dichVus) {
-        this.dichVus = dichVus;
-    }
+    public List<LichHenDichVu> getDichVus() { return dichVus; }
+    public void setDichVus(List<LichHenDichVu> dichVus) { this.dichVus = dichVus; }
 }

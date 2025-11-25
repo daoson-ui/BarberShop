@@ -12,7 +12,7 @@ public class KhachHang {
     @Column(name = "makh")
     private Integer makh;
 
-    @Column(name = "ho_ten", length = 100)
+    @Column(name = "ho_ten", length = 100, nullable = false)
     private String hoTen;
 
     @Column(name = "gioi_tinh", length = 10)
@@ -24,45 +24,23 @@ public class KhachHang {
     @Column(name = "sdt", length = 20)
     private String sdt;
 
+    @OneToOne
+    @JoinColumn(name = "account_id", unique = true)
+    private Account account;
+
     public KhachHang() {}
 
-    public Integer getMakh() {
-        return makh;
-    }
-
-    public void setMakh(Integer makh) {
-        this.makh = makh;
-    }
-
-    public String getHoTen() {
-        return hoTen;
-    }
-
-    public void setHoTen(String hoTen) {
-        this.hoTen = hoTen;
-    }
-
-    public String getGioiTinh() {
-        return gioiTinh;
-    }
-
-    public void setGioiTinh(String gioiTinh) {
-        this.gioiTinh = gioiTinh;
-    }
-
-    public LocalDate getNgaySinh() {
-        return ngaySinh;
-    }
-
-    public void setNgaySinh(LocalDate ngaySinh) {
-        this.ngaySinh = ngaySinh;
-    }
-
-    public String getSdt() {
-        return sdt;
-    }
-
-    public void setSdt(String sdt) {
-        this.sdt = sdt;
-    }
+    // Getter - Setter
+    public Integer getMakh() { return makh; }
+    public void setMakh(Integer makh) { this.makh = makh; }
+    public String getHoTen() { return hoTen; }
+    public void setHoTen(String hoTen) { this.hoTen = hoTen; }
+    public String getGioiTinh() { return gioiTinh; }
+    public void setGioiTinh(String gioiTinh) { this.gioiTinh = gioiTinh; }
+    public LocalDate getNgaySinh() { return ngaySinh; }
+    public void setNgaySinh(LocalDate ngaySinh) { this.ngaySinh = ngaySinh; }
+    public String getSdt() { return sdt; }
+    public void setSdt(String sdt) { this.sdt = sdt; }
+    public Account getAccount() { return account; }
+    public void setAccount(Account account) { this.account = account; }
 }

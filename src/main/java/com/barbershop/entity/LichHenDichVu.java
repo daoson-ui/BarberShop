@@ -4,24 +4,33 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(name = "lich_hen_dich_vu")
-@IdClass(LichHenDichVuId.class)
 public class LichHenDichVu {
 
-    @Id
+    @EmbeddedId
+    private LichHenDichVuId id = new LichHenDichVuId();
+
+    @MapsId("maLh")
     @ManyToOne
     @JoinColumn(name = "ma_lh")
     private LichHen lichHen;
 
-    @Id
+    @MapsId("maDv")
     @ManyToOne
     @JoinColumn(name = "ma_dv")
     private DichVu dichVu;
 
-    @Column(name = "so_luong")
-    private Integer soLuong;
-
     @Column(name = "ghi_chu")
     private String ghiChu;
+
+    // ================== GETTER - SETTER =====================
+
+    public LichHenDichVuId getId() {
+        return id;
+    }
+
+    public void setId(LichHenDichVuId id) {
+        this.id = id;
+    }
 
     public LichHen getLichHen() {
         return lichHen;
@@ -29,6 +38,7 @@ public class LichHenDichVu {
 
     public void setLichHen(LichHen lichHen) {
         this.lichHen = lichHen;
+        this.id.setMaLh(lichHen != null ? lichHen.getMaLh() : null);
     }
 
     public DichVu getDichVu() {
@@ -37,14 +47,7 @@ public class LichHenDichVu {
 
     public void setDichVu(DichVu dichVu) {
         this.dichVu = dichVu;
-    }
-
-    public Integer getSoLuong() {
-        return soLuong;
-    }
-
-    public void setSoLuong(Integer soLuong) {
-        this.soLuong = soLuong;
+        this.id.setMaDv(dichVu != null ? dichVu.getMaDv() : null);
     }
 
     public String getGhiChu() {

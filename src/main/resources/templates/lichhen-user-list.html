@@ -5,71 +5,169 @@
     <title>Danh sách Lịch hẹn</title>
 
     <style>
-        body { font-family: Arial; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        table, th, td { border: 1px solid #ddd; }
-        th, td { padding: 10px; text-align: left; }
-        th { background: #1976d2; color: white; }
-        a.button {
-            padding: 8px 12px; background: #1976d2; color: white;
-            text-decoration: none; border-radius: 5px;
-            margin-right: 6px;
+        body {
+            font-family: Arial;
+            background: #f4f4f4;
+            padding: 20px;
         }
-        a.button:hover { background: #0d47a1; }
-        .btn-delete { background: red !important; }
+
+        .container {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            max-width: 1000px;
+            margin: auto;
+            box-shadow: 0 0 10px #ccc;
+        }
+
+        h2 {
+            color: #1976d2;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        a.button {
+            padding: 10px 14px;
+            background: #1976d2;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            margin-right: 8px;
+        }
+
+        a.button:hover {
+            background: #0d47a1;
+        }
+
+        .btn-delete {
+            background: red !important;
+        }
+
+        .btn-delete:hover {
+            background: darkred !important;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background: #1976d2;
+            color: white;
+            font-size: 15px;
+        }
+
+        td {
+            background: #fafafa;
+        }
+
+        /* Alert styles */
+        .alert {
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .alert-success {
+            background: #c8f7c5;
+            border: 1px solid #2d7d2d;
+            color: #2d7d2d;
+        }
+
+        .alert-error {
+            background: #ffe0e0;
+            border: 1px solid #bb0000;
+            color: #bb0000;
+        }
+
     </style>
 </head>
+
 <body>
 
-<h2>Danh sách Lịch hẹn</h2>
+<div class="container">
 
-<a class="button" href="/user/lichhen/add">+ Tạo lịch hẹn</a>
-<br><br>
+    <h2>Danh sách Lịch hẹn</h2>
 
-<table>
-    <tr>
-        <th>Mã Lịch hẹn</th>
-        <th>Bắt đầu</th>
-        <th>Kết thúc</th>
-        <th>Khách hàng</th>
-        <th>Nhân viên</th>
-        <th>Dịch vụ</th>
-        <th>Thao tác</th>
-    </tr>
+    <!-- SUCCESS -->
+    <div th:if="${successMsg}" class="alert alert-success" th:text="${successMsg}"></div>
 
-    <tr th:each="lh : ${listLichHen}">
-        <td th:text="${lh.maLh}"></td>
+    <!-- ERROR -->
+    <div th:if="${errorMsg}" class="alert alert-error" th:text="${errorMsg}"></div>
 
-        <td th:text="${#temporals.format(lh.ngayGioBatDau, 'dd/MM/yyyy HH:mm')}"></td>
-        <td th:text="${#temporals.format(lh.ngayGioKetThuc, 'dd/MM/yyyy HH:mm')}"></td>
+    <a class="button" href="/user/home">← Quay lại</a>
 
-        <td th:text="${lh.khachHang != null ? lh.khachHang.hoTen : '---'}"></td>
-        <td th:text="${lh.nhanVien != null ? lh.nhanVien.hoTen : '---'}"></td>
+    <table>
+        <tr>
+            <th>Mã</th>
+            <th>Ngày hẹn</th>
+            <th>Giờ hẹn</th>
+            <th>Nhân viên</th>
+            <th>Dịch vụ</th>
+            <th>Thao tác</th>
+        </tr>
 
-        <td>
-            <span th:if="${#lists.isEmpty(mapDichVu[lh.maLh])}">
-                Không có
-            </span>
+        <tr th:each="lh : ${listLichHen}">
+            <td th:text="${lh.maLh}"></td>
 
-            <span th:each="dv : ${mapDichVu[lh.maLh]}">
-                • <b th:text="${dv.dichVu.tenDv}"></b>
-            </span>
-        </td>
+            <!-- NGÀY HẸN -->
+            <td th:text="${#temporals.format(lh.ngayHen, 'dd/MM/yyyy')}"></td>
 
-        <td>
-            <a class="button" th:href="@{'/user/lichhen/edit/' + ${lh.maLh}}">Sửa</a>
+            <!-- GIỜ HẸN -->
+            <td th:text="${lh.gioHen}"></td>
 
-            <a class="button btn-delete"
-               th:href="@{'/user/lichhen/delete/' + ${lh.maLh}}"
-               onclick="return confirm('Bạn có chắc muốn xóa lịch hẹn này?')">
-               Xóa
-            </a>
-        </td>
-    </tr>
-</table>
+            <!-- NHÂN VIÊN -->
+            <td th:text="${lh.nhanVien != null ? lh.nhanVien.hoTen : '---'}"></td>
 
-<br>
-<a href="/user/home" class="button">← Quay lại Dashboard</a>
+            <!-- DỊCH VỤ -->
+            <td>
+                <span th:if="${#lists.isEmpty(mapDichVu[lh.maLh])}">
+                    Không có
+                </span>
+
+                <span th:each="dv : ${mapDichVu[lh.maLh]}">
+                    • <b th:text="${dv.dichVu.tenDv}"></b><br>
+                </span>
+            </td>
+
+            <!-- ACTIONS -->
+            <td>
+                <a class="button"
+                   th:href="@{'/user/lichhen/edit/' + ${lh.maLh}}">
+                    Sửa
+                </a>
+
+                <a class="button btn-delete"
+                   th:href="@{'/user/lichhen/delete/' + ${lh.maLh}}"
+                   onclick="return confirm('Bạn có chắc muốn xóa lịch hẹn này?');">
+                    Xóa
+                </a>
+            </td>
+        </tr>
+    </table>
+
+</div>
+
+<script>
+    // Ẩn thông báo sau 2 giây
+    setTimeout(function () {
+        let alerts = document.querySelectorAll(".alert");
+        alerts.forEach(a => {
+            a.style.transition = "opacity 0.6s";
+            a.style.opacity = "0";
+            setTimeout(() => a.style.display = "none", 600);
+        });
+    }, 2000);
+</script>
 
 </body>
 </html>

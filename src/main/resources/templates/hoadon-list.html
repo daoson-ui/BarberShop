@@ -41,7 +41,10 @@
         <td th:text="${#temporals.format(hd.ngayThanhToan, 'dd/MM/yyyy')}"></td>
 
         <!-- CỘT KHÁCH HÀNG -->
-        <td th:text="${hd.lichHen.khachHang.hoTen}"></td>
+        <td th:text="${hd.lichHen != null && hd.lichHen.khachHang != null 
+              ? hd.lichHen.khachHang.hoTen 
+              : '---'}"></td>
+
 
         <!-- CỘT DỊCH VỤ -->
         <td>

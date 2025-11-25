@@ -1,9 +1,6 @@
 package com.barbershop.controller;
 
-import com.barbershop.entity.DichVu;
-import com.barbershop.entity.LichHen;
-import com.barbershop.entity.LichHenDichVu;
-import com.barbershop.entity.LichHenDichVuId;
+import com.barbershop.entity.*;
 import com.barbershop.repository.DichVuRepository;
 import com.barbershop.repository.LichHenDichVuRepository;
 import com.barbershop.repository.LichHenRepository;
@@ -50,10 +47,10 @@ public class LichHenDichVuController {
 
         if (session.getAttribute("user") == null) return "redirect:/login";
 
-        LichHen lichHen = lichHenRepo.findById(maLh).orElse(null);
+        LichHen lh = lichHenRepo.findById(maLh).orElse(null);
 
         LichHenDichVu obj = new LichHenDichVu();
-        obj.setLichHen(lichHen);
+        obj.setLichHen(lh);
 
         model.addAttribute("obj", obj);
         model.addAttribute("listDichVu", dichVuRepo.findAll());
@@ -68,8 +65,7 @@ public class LichHenDichVuController {
         try {
             repo.save(obj);
         } catch (DataIntegrityViolationException ex) {
-            // THÊM TRÙNG KHÓA
-            model.addAttribute("error", "Dịch vụ này đã tồn tại trong lịch hẹn!");
+            model.addAttribute("error", "⚠ Dịch vụ này đã tồn tại trong lịch hẹn!");
             model.addAttribute("obj", obj);
             model.addAttribute("listDichVu", dichVuRepo.findAll());
             return "lichhen-dichvu-add";
@@ -100,7 +96,7 @@ public class LichHenDichVuController {
     @PostMapping("/edit")
     public String edit(@ModelAttribute LichHenDichVu obj) {
 
-        // KHÔNG ĐƯỢC ĐỔI DỊCH VỤ → chỉ update số lượng + ghi chú
+        // Không được đổi khóa → chỉ sửa ghi chú
         repo.save(obj);
 
         return "redirect:/admin/lichhen-dichvu/" + obj.getLichHen().getMaLh();

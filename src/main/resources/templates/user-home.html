@@ -2,54 +2,86 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>User Home</title>
+    <title>Trang chủ Khách hàng</title>
 
     <style>
         body {
             font-family: Arial;
-            background: #f4f4f4;
-            text-align: center;
-            margin: 0;
-            padding: 0;
+            background: #eef2f3;
+            padding: 20px;
         }
 
         .container {
-            margin: 60px auto;
-            width: 500px;
             background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 0 10px #ccc;
+            padding: 25px;
+            max-width: 1100px;
+            margin: auto;
+            border-radius: 10px;
+            box-shadow: 0 0 10px #bbb;
         }
 
         h2 {
             color: #1976d2;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
-
-        p {
-            font-size: 16px;
-            margin-bottom: 25px;
-        }
-
         a.button {
-            display: block;
-            width: 80%;
-            margin: 12px auto;
-            padding: 12px;
+            padding: 10px 14px;
             background: #1976d2;
             color: white;
             text-decoration: none;
-            border-radius: 8px;
-            font-size: 18px;
+            border-radius: 6px;
+            margin-right: 8px;
         }
 
         a.button:hover {
             background: #0d47a1;
         }
+        .menu {
+            margin-bottom: 15px;
+        }
 
-        .btn-logout {
-            margin-top: 25px;
+        .menu a {
+            display: inline-block;
+            padding: 10px 15px;
+            background: #1976d2;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            margin-right: 10px;
+        }
+        .menu a:hover { background: #0d47a1; }
+
+        .alert {
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .alert-success { background: #d4ffd4; color: green; }
+        .alert-error   { background: #ffd4d4; color: red; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background: #1976d2;
+            color: white;
+        }
+
+        td {
+            background: #fafafa;
+        }
+
+        .btn-delete {
             background: red !important;
         }
     </style>
@@ -58,16 +90,84 @@
 <body>
 
 <div class="container">
-    <h2>Chào mừng Khách Hàng!</h2>
 
-    <p>Bạn đã đăng nhập thành công.</p>
+    <h2>👋 Chào mừng, <span th:text="${kh.hoTen}"></span>!</h2>
 
-    <a class="button" href="/user/lichhen/add">➕ Đặt lịch hẹn</a>
-    <a class="button" href="/user/lichhen/list">📅 Danh sách lịch hẹn</a>
-    <a class="button" href="/user/profile">👤 Thông tin cá nhân</a>
+    <!-- MENU -->
+    <div class="menu">
+        <a href="/user/lichhen/add">➕ Tạo lịch hẹn</a>
+        <a href="/user/profile">👤 Thông tin cá nhân</a>
+        <a href="/logout" style="background:#444;">🚪 Đăng xuất</a>
+    </div>
 
-    <a class="button btn-logout" href="/logout">Đăng xuất</a>
+    <!-- ALERTS -->
+    <div th:if="${successMsg}" class="alert alert-success" th:text="${successMsg}"></div>
+    <div th:if="${errorMsg}" class="alert alert-error" th:text="${errorMsg}"></div>
+
+    <!-- ===== DANH SÁCH LỊCH HẸN ===== -->
+
+    <h3 style="margin-top:25px;">📅 Danh sách lịch hẹn của bạn</h3>
+
+    <table>
+        <tr>
+            <th>Mã</th>
+            <th>Ngày hẹn</th>
+            <th>Giờ hẹn</th>
+            <th>Nhân viên</th>
+            <th>Dịch vụ</th>
+            <th>Thao tác</th>
+        </tr>
+
+        <tr th:each="lh : ${listLichHen}">
+            <td th:text="${lh.maLh}"></td>
+
+            <!-- Ngày hẹn -->
+            <td th:text="${#temporals.format(lh.ngayHen, 'dd/MM/yyyy')}"></td>
+
+            <!-- Giờ hẹn -->
+            <td th:text="${#temporals.format(lh.gioHen, 'HH:mm')}"></td>
+
+            <!-- Nhân viên -->
+            <td th:text="${lh.nhanVien.hoTen}"></td>
+
+            <!-- Dịch vụ -->
+            <td>
+                <span th:each="dv : ${mapDichVu[lh.maLh]}">
+                    • <b th:text="${dv.dichVu.tenDv}"></b><br>
+                </span>
+            </td>
+
+            <!-- Thao tác -->
+            <td>
+                <a class="button"
+                   th:href="@{'/user/lichhen/edit/' + ${lh.maLh}}">
+                    Sửa
+                </a>
+
+                <a class="button btn-delete"
+                   th:href="@{'/user/lichhen/delete/' + ${lh.maLh}}"
+                   onclick="return confirm('Bạn có chắc muốn xóa lịch hẹn này?');">
+                    Xóa
+                </a>
+            </td>
+        </tr>
+
+    </table>
+
 </div>
+
+<script>
+    // Tự động ẩn thông báo sau 2 giây
+    setTimeout(function () {
+        let alerts = document.querySelectorAll(".alert");
+        alerts.forEach(a => {
+            a.style.transition = "opacity 0.6s";
+            a.style.opacity = "0";
+
+            setTimeout(() => a.style.display = "none", 600);
+        });
+    }, 2000);
+</script>
 
 </body>
 </html>
