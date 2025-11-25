@@ -99,29 +99,15 @@
 <div class="container"
      th:data-current-time="${lichHen.gioHen}"
      th:data-id="${lichHen.maLh}">
+
     <h2>Cập nhật Lịch hẹn</h2>
 
     <div th:if="${errorMsg}" class="alert-error" th:text="${errorMsg}"></div>
 
     <form th:action="@{/user/lichhen/edit}" method="post" id="editForm">
 
-        <input type="hidden" name="maLh" th:value="${lichHen.maLh}"/>
-
-        <!-- Ngày -->
-        <label>Ngày hẹn:</label>
-        <input type="date" id="ngayHen" name="ngayHen"
-               th:value="${lichHen.ngayHen}" required />
-
-        <!-- Nhân viên -->
-        <label>Nhân viên:</label>
-        <select id="nhanVien" name="nhanVien" required>
-            <option value="">-- Chọn nhân viên --</option>
-            <option th:each="nv : ${listNhanVien}"
-                    th:value="${nv.manv}"
-                    th:text="${nv.hoTen}"
-                    th:selected="${nv.manv == lichHen.nhanVien.manv}">
-            </option>
-        </select>
+        <!-- ⭐ MUST HAVE: id="maLh" để JS biết excludeId -->
+        <input type="hidden" name="maLh" id="maLh" th:value="${lichHen.maLh}"/>
 
         <!-- Dịch vụ -->
         <label>Dịch vụ:</label>
@@ -136,9 +122,25 @@
             </label>
         </div>
 
+        <!-- Nhân viên -->
+        <label>Nhân viên:</label>
+        <select id="nhanVien" name="nhanVien" required>
+            <option value="">-- Chọn nhân viên --</option>
+            <option th:each="nv : ${listNhanVien}"
+                    th:value="${nv.manv}"
+                    th:text="${nv.hoTen}"
+                    th:selected="${nv.manv == lichHen.nhanVien.manv}">
+            </option>
+        </select>
+
+        <!-- Ngày -->
+        <label>Ngày hẹn:</label>
+        <input type="date" id="ngayHen" name="ngayHen"
+               th:value="${lichHen.ngayHen}" required />
+
         <!-- Giờ -->
         <label>Giờ hẹn:</label>
-        <select id="gioHen" name="gioHen" disabled required>
+        <select id="gioHen" name="gioHen" required>
             <option value="">-- Chọn giờ --</option>
         </select>
 
@@ -149,97 +151,180 @@
 </div>
 
 <script>
-/* Normalize DB time (HH:mm:ss -> HH:mm) */
-function normalizeTime(t) {
-    if (!t) return '';
-    return t.length >= 5 ? t.substring(0,5) : t;
-}
+(() => {
+    const DEBOUNCE_MS = 300;
+    const MIN_SLOT = "-- Chọn giờ --";
 
-/* Kiểm tra điều kiện bật select giờ */
-function checkEnableTimeEdit() {
-    const date = document.getElementById('ngayHen').value;
-    const manv = document.getElementById('nhanVien').value;
+    const ngayEl = document.getElementById('ngayHen');
+    const manvEl = document.getElementById('nhanVien');
+    const gioEl = document.getElementById('gioHen');
+    const formEl = document.getElementById('editForm');
+    const maLhEl = document.getElementById('maLh');
+    const dvName = "dichVuChon";
 
-    let dvCount = 0;
-    document.querySelectorAll('.dv-check:checked').forEach(() => dvCount++);
+    const cache = new Map();
+    let currentAbort = null;
 
-    const select = document.getElementById('gioHen');
-
-    if (date && manv && dvCount > 0) {
-        select.disabled = false;
-        loadTimeSlotsEdit();
-    } else {
-        select.disabled = true;
-        select.innerHTML = '<option value="">-- Chọn giờ --</option>';
+    function debounce(fn, ms) {
+        let t = null;
+        return (...args) => {
+            if (t) clearTimeout(t);
+            t = setTimeout(() => fn(...args), ms);
+        };
     }
-}
 
-/* Load giờ rảnh/bận, có excludeId để bỏ qua chính lịch đang sửa */
-async function loadTimeSlotsEdit() {
-    const ngay = document.getElementById('ngayHen').value;
-    const manv = document.getElementById('nhanVien').value;
-    const maLh = document.querySelector('.container').dataset.id;
-    if (!ngay || !manv) return;
+    function dvIdsKey(arr) {
+        if (!arr || arr.length === 0) return "";
+        return arr.map(x => String(x)).sort().join(',');
+    }
 
-    const currentTime = normalizeTime(document.querySelector('.container').dataset.currentTime || '');
+    function readSelectedDvIds() {
+        return Array.from(document.querySelectorAll(`input[name='${dvName}']:checked`))
+            .map(n => n.value);
+    }
 
-    let dvIds = [];
-    document.querySelectorAll('.dv-check:checked').forEach(cb => dvIds.push(cb.value));
+    function showLoading() {
+        gioEl.innerHTML = "";
+        const o = document.createElement('option');
+        o.textContent = "Đang tải...";
+        o.disabled = true;
+        gioEl.appendChild(o);
+    }
 
-    let url = `/user/lichhen/api/timeslots?manv=${manv}&ngay=${ngay}&excludeId=${maLh}`;
-    dvIds.forEach(id => url += `&dvIds[]=${id}`);
+    function resetSelect() {
+        gioEl.innerHTML = "";
+        const o = document.createElement('option');
+        o.textContent = MIN_SLOT;
+        gioEl.appendChild(o);
+    }
 
-    try {
-        const res = await fetch(url);
-        const data = await res.json();
+    function setError(msg) {
+        resetSelect();
+        const o = document.createElement('option');
+        o.textContent = "Lỗi: " + msg;
+        o.disabled = true;
+        gioEl.appendChild(o);
+    }
 
-        const select = document.getElementById('gioHen');
-        select.innerHTML = '<option value="">-- Chọn giờ --</option>';
+    function renderSlots(data) {
+        gioEl.innerHTML = "";
+        const def = document.createElement('option');
+        def.value = "";
+        def.textContent = MIN_SLOT;
+        gioEl.appendChild(def);
 
         data.forEach(item => {
             const opt = document.createElement('option');
             opt.value = item.time;
+
+            opt.textContent = item.busy ? `${item.time} (Bận)` : item.time;
             if (item.busy) {
-                opt.textContent = `${item.time} (Bận)`;
                 opt.disabled = true;
-                opt.className = 'busy';
+                opt.classList.add("busy");
             } else {
-                opt.textContent = item.time;
-                opt.className = 'free';
+                opt.classList.add("free");
             }
 
-            if (item.time === currentTime) opt.selected = true;
-            select.appendChild(opt);
+            gioEl.appendChild(opt);
         });
-    } catch (e) {
-        console.error('loadTimeSlotsEdit error', e);
+
+        // ⭐ Auto select giờ cũ nếu rảnh
+        const oldTime = document.querySelector(".container").dataset.currentTime;
+        if (oldTime) {
+            const option = Array.from(gioEl.options).find(o => o.value === oldTime);
+            if (option && !option.disabled) {
+                option.selected = true;
+            }
+        }
     }
-}
 
-/* Event bindings */
-document.getElementById('ngayHen').addEventListener('change', checkEnableTimeEdit);
-document.getElementById('nhanVien').addEventListener('change', checkEnableTimeEdit);
-document.querySelectorAll('.dv-check').forEach(cb => cb.addEventListener('change', checkEnableTimeEdit));
+    async function _loadTimeSlots() {
+        const ngay = ngayEl.value;
+        const manv = manvEl.value;
 
-/* Khi mở trang edit: chờ DOM render xong, sau đó kiểm tra và load */
-window.addEventListener('load', () => {
-    // delay nhỏ để Thymeleaf đã đánh dấu checked cho checkbox
-    setTimeout(() => {
-        checkEnableTimeEdit(); // sẽ gọi loadTimeSlotsEdit nếu đủ điều kiện
-    }, 80);
-});
+        if (!ngay || !manv) {
+            resetSelect();
+            return;
+        }
 
-/* Chặn chỉnh sửa về quá khứ */
-document.getElementById('editForm').addEventListener('submit', function(e) {
-    const d = document.getElementById('ngayHen').value;
-    const t = document.getElementById('gioHen').value;
-    if (!d || !t) return;
-    const selected = new Date(d + 'T' + t);
-    if (selected < new Date()) {
-        e.preventDefault();
-        alert('❌ Không thể chỉnh sửa về quá khứ!');
+        const dvIds = readSelectedDvIds();
+        const dvKey = dvIdsKey(dvIds);
+        const excludeId = maLhEl.value;
+
+        const cacheKey = `${manv}|${ngay}|${dvKey}|${excludeId}`;
+
+        if (cache.has(cacheKey)) {
+            renderSlots(cache.get(cacheKey));
+            return;
+        }
+
+        if (currentAbort) {
+            try { currentAbort.abort(); } catch (e) {}
+        }
+
+        currentAbort = new AbortController();
+        const signal = currentAbort.signal;
+
+        showLoading();
+
+        const params = new URLSearchParams();
+        params.set('manv', manv);
+        params.set('ngay', ngay);
+        params.set('excludeId', excludeId);
+        dvIds.forEach(id => params.append('dvIds[]', id));
+
+        const url = `/user/lichhen/api/timeslots?${params.toString()}`;
+
+        try {
+            const res = await fetch(url, { signal, cache: 'no-store' });
+            if (!res.ok) {
+                setError(`Server lỗi ${res.status}`);
+                return;
+            }
+
+            const data = await res.json();
+            if (!Array.isArray(data)) {
+                setError("Dữ liệu sai định dạng");
+                return;
+            }
+
+            cache.set(cacheKey, data);
+            renderSlots(data);
+
+        } catch (err) {
+            if (err.name === "AbortError") return;
+            setError("Mất kết nối, thử lại");
+        } finally {
+            currentAbort = null;
+        }
     }
-});
+
+    const loadTimeSlots = debounce(_loadTimeSlots, DEBOUNCE_MS);
+
+    function wire() {
+        ngayEl.addEventListener('change', loadTimeSlots);
+        manvEl.addEventListener('change', loadTimeSlots);
+
+        document.querySelectorAll(`input[name='${dvName}']`)
+            .forEach(cb => cb.addEventListener('change', loadTimeSlots));
+
+        formEl.addEventListener('submit', (e) => {
+            const date = ngayEl.value;
+            const time = gioEl.value;
+            if (!date || !time) return;
+            const sel = new Date(date + "T" + time);
+            const now = new Date();
+            if (sel < now) {
+                e.preventDefault();
+                alert("❌ Thời điểm đã qua.");
+            }
+        });
+    }
+
+    wire();
+    setTimeout(() => _loadTimeSlots(), 100);
+
+})();
 </script>
 
 </body>

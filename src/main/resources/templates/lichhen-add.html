@@ -20,10 +20,7 @@
             box-shadow: 0 0 10px #ccc;
         }
 
-        h2 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
+        h2 { text-align: center; margin-bottom: 20px; }
 
         label {
             font-weight: bold;
@@ -80,18 +77,17 @@
         }
 
         /* giờ bận */
-        .busy {
-            background: #ffcccc;
-            color: #555;
+        .busy-option {
+            background: #ffcccc !important;
+            color: #555 !important;
             font-weight: bold;
         }
 
         /* giờ rảnh */
-        .free {
-            background: #ccffcc;
+        .free-option {
+            background: #eeffee !important;
             font-weight: bold;
         }
-
     </style>
 </head>
 <body>
@@ -102,11 +98,18 @@
     <div th:if="${errorMsg}" class="alert-error" th:text="${errorMsg}"></div>
 
     <form th:action="@{/user/lichhen/save}" method="post" id="addForm">
+        <!-- Dịch vụ -->
+        <label>Dịch vụ:</label>
+        <div class="dv-box">
+            <label th:each="dv : ${listDichVu}" style="display:block; margin-bottom:5px;">
+                <input type="checkbox" name="dichVuChon"
+                       th:value="${dv.maDv}"/>
+                <span th:text="${dv.tenDv}"></span>
+            </label>
+        </div>
 
-        <!-- Ngày hẹn -->
-        <label>Ngày hẹn</label>
-        <input type="date" name="ngayHen" id="ngayHen" required/>
-
+       
+        
         <!-- Nhân viên -->
         <label>Nhân viên:</label>
         <select name="manv" id="manv" required>
@@ -116,19 +119,12 @@
                     th:text="${nv.hoTen}">
             </option>
         </select>
-
-        <!-- Dịch vụ -->
-        <label>Dịch vụ:</label>
-        <div class="dv-box">
-            <label th:each="dv : ${listDichVu}" style="display:block; margin-bottom:5px;">
-                <input type="checkbox" name="dichVuChon" id="dvIds"
-                       th:value="${dv.maDv}"/>
-                <span th:text="${dv.tenDv}"></span>
-            </label>
-        </div>
+        <!-- Ngày hẹn -->
+        <label>Ngày hẹn:</label>
+        <input type="date" name="ngayHen" id="ngayHen" required/>
 
         <!-- Giờ hẹn -->
-        <label>Giờ hẹn</label>
+        <label>Giờ hẹn:</label>
         <select name="gioHen" id="gioHen" required>
             <option value="">-- Chọn giờ --</option>
         </select>
@@ -140,83 +136,232 @@
 </div>
 
 <script>
+/*
+ Advanced timeslot loader
+ - Debounce (300ms)
+ - Abort previous fetch to avoid races
+ - Cache by key (manv|ngay|dvIdsKey)
+ - Preserve selected services regardless chọn theo thứ tự nào
+ - Show simple loading state and handle network errors
+ - Works with checkboxes name="dichVuChon", inputs: #ngayHen, #manv, <select id="gioHen">
+*/
 
-/* =========================================================
-   HÀM TẢI DANH SÁCH GIỜ RẢNH TỪ BACKEND
-========================================================= */
-async function loadTimeSlots() {
+(() => {
+    const DEBOUNCE_MS = 300;
+    const MIN_SLOT = "-- Chọn giờ --";
 
-    const ngay = document.getElementById('ngayHen').value;
-    const manv = document.getElementById('manv').value;
+    const ngayEl = document.getElementById('ngayHen');
+    const manvEl = document.getElementById('manv');
+    const gioEl = document.getElementById('gioHen');
+    const formEl = document.getElementById('addForm');
+    const dvSelectorName = "dichVuChon";
 
-    if (!ngay || !manv) return;
+    // cache map: key -> data
+    const cache = new Map();
 
-    let dvIds = [];
-    document.querySelectorAll("input[name='dichVuChon']:checked").forEach(cb => {
-        dvIds.push(cb.value);
-    });
+    // abort controller for in-flight fetch
+    let currentAbort = null;
 
-    // build URL
-    let url = `/user/lichhen/api/timeslots?manv=${manv}&ngay=${ngay}`;
+    // simple debounce helper
+    function debounce(fn, ms) {
+        let t = null;
+        return (...args) => {
+            if (t) clearTimeout(t);
+            t = setTimeout(() => fn(...args), ms);
+        };
+    }
 
-    dvIds.forEach(id => {
-        url += `&dvIds[]=${id}`;
-    });
+    // build canonical key for dvIds (sorted numeric)
+    function dvIdsKey(arr) {
+        if (!arr || arr.length === 0) return "";
+        // ensure numbers and sorted to keep stable key regardless order of selection
+        const normalized = arr.map(x => String(x)).sort();
+        return normalized.join(',');
+    }
 
-    const response = await fetch(url);
-    const data = await response.json();
+    // read currently checked dv ids (live)
+    function readSelectedDvIds() {
+        const nodeList = document.querySelectorAll(`input[name='${dvSelectorName}']:checked`);
+        const ids = Array.from(nodeList).map(n => n.value).filter(v => v !== undefined && v !== null && v !== "");
+        return ids;
+    }
 
-    const select = document.getElementById('gioHen');
-    select.innerHTML = '';
+    // helper to set spinner in select
+    function showLoading() {
+        gioEl.innerHTML = "";
+        const o = document.createElement('option');
+        o.value = "";
+        o.textContent = "Đang tải...";
+        o.disabled = true;
+        gioEl.appendChild(o);
+    }
 
-    data.forEach(item => {
-        const opt = document.createElement("option");
-        opt.value = item.time;
+    function resetSelect() {
+        gioEl.innerHTML = "";
+        const o = document.createElement('option');
+        o.value = "";
+        o.textContent = MIN_SLOT;
+        gioEl.appendChild(o);
+    }
 
-        if (item.busy) {
-            opt.textContent = `${item.time} (Bận)`;
-            opt.classList.add("busy");
-            opt.disabled = true;
-        } else {
-            opt.textContent = `${item.time}`;
-            opt.classList.add("free");
+    function setError(msg) {
+        resetSelect();
+        const o = document.createElement('option');
+        o.value = "";
+        o.textContent = "Lỗi: " + msg;
+        o.disabled = true;
+        gioEl.appendChild(o);
+    }
+
+    // render data into select
+    function renderSlots(data) {
+        // data is array of {time: "08:00", busy: true/false}
+        gioEl.innerHTML = "";
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = "";
+        defaultOpt.textContent = MIN_SLOT;
+        gioEl.appendChild(defaultOpt);
+
+        data.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.time;
+            opt.textContent = item.busy ? `${item.time} (Bận)` : item.time;
+            if (item.busy) {
+                opt.disabled = true;
+                opt.className = "busy-option";
+            } else {
+                opt.className = "free-option";
+            }
+            gioEl.appendChild(opt);
+        });
+    }
+
+    // Actual loader (non-debounced)
+    async function _loadTimeSlots() {
+        const ngay = ngayEl.value;
+        const manv = manvEl.value;
+
+        // if missing ngay or manv -> reset select and STOP
+        if (!ngay || !manv) {
+            resetSelect();
+            return;
         }
 
-        select.appendChild(opt);
-    });
-}
+        // get dv ids (always read live)
+        const dvIds = readSelectedDvIds();
+        const dvKey = dvIdsKey(dvIds);
+        const cacheKey = `${manv}|${ngay}|${dvKey}`;
 
-/* =========================================================
-   SỰ KIỆN TỰ ĐỘNG LOAD GIỜ RẢNH
-========================================================= */
-document.getElementById('ngayHen').addEventListener('change', loadTimeSlots);
-document.getElementById('manv').addEventListener('change', loadTimeSlots);
+        // if cached, use it
+        if (cache.has(cacheKey)) {
+            renderSlots(cache.get(cacheKey));
+            return;
+        }
 
-// Khi chọn dịch vụ
-document.querySelectorAll("input[name='dichVuChon']").forEach(cb => {
-    cb.addEventListener("change", loadTimeSlots);
-});
+        // abort previous fetch if any
+        if (currentAbort) {
+            try { currentAbort.abort(); } catch (e) {/* no-op */}
+            currentAbort = null;
+        }
+        currentAbort = new AbortController();
+        const signal = currentAbort.signal;
 
-/* =========================================================
-   CHẶN ĐẶT LỊCH QUÁ KHỨ
-========================================================= */
-document.getElementById('addForm').addEventListener('submit', function (e) {
+        showLoading();
 
-    const date = document.getElementById('ngayHen').value;
-    const time = document.getElementById('gioHen').value;
+        // build url param safely (encode)
+        const params = new URLSearchParams();
+        params.set('manv', String(manv));
+        params.set('ngay', String(ngay));
+        // append dvIds[] multiple times
+        dvIds.forEach(id => params.append('dvIds[]', String(id)));
 
-    if (!date || !time) return;
+        const url = `/user/lichhen/api/timeslots?${params.toString()}`;
 
-    const selected = new Date(date + "T" + time);
-    const now = new Date();
+        try {
+            const res = await fetch(url, { signal, cache: 'no-store' });
+            if (!res.ok) {
+                // network error code path
+                setError(`Server trả lỗi ${res.status}`);
+                return;
+            }
+            const data = await res.json();
 
-    if (selected < now) {
-        e.preventDefault();
-        alert("❌ Không thể đặt lịch trong quá khứ!");
+            // basic validation
+            if (!Array.isArray(data)) {
+                setError("Dữ liệu trả về không đúng định dạng");
+                return;
+            }
+
+            // cache result (small LRU not needed for small app)
+            cache.set(cacheKey, data);
+
+            renderSlots(data);
+
+        } catch (err) {
+            if (err.name === 'AbortError') {
+                // intentionally aborted - do nothing
+                return;
+            }
+            // network/other error
+            setError("Không thể kết nối. Vui lòng thử lại.");
+            console.error("loadTimeSlots error:", err);
+        } finally {
+            currentAbort = null;
+        }
     }
-});
 
+    // debounced loader for event handlers
+    const loadTimeSlots = debounce(_loadTimeSlots, DEBOUNCE_MS);
+
+    // Attach events:
+    // - change on date and staff
+    // - change on any dv checkbox
+    // - also on page load (in case fields prefilled)
+    function wireEvents() {
+        if (ngayEl) ngayEl.addEventListener('change', loadTimeSlots);
+        if (manvEl) manvEl.addEventListener('change', loadTimeSlots);
+
+        // delegate: new checkboxes might be added; we wire current ones and observe container if needed
+        document.querySelectorAll(`input[name='${dvSelectorName}']`).forEach(cb => {
+            cb.addEventListener('change', loadTimeSlots);
+        });
+
+        // if someone programmatically changes selections, you may call loadTimeSlots() manually
+
+        // on form submit, final client-side check for past datetime
+        if (formEl) {
+            formEl.addEventListener('submit', (e) => {
+                const date = ngayEl.value;
+                const time = gioEl.value;
+                if (!date || !time) return; // let server validate too
+                const selected = new Date(date + "T" + time);
+                const now = new Date();
+                if (selected < now) {
+                    e.preventDefault();
+                    alert("❌ Không thể đặt lịch trong quá khứ!");
+                }
+            });
+        }
+    }
+
+    // Run at init
+    wireEvents();
+
+    // Optional: load slots if fields already prefilled (e.g. user navigated back)
+    // Delay a tick to allow any server-side prefill to render
+    setTimeout(() => {
+        _loadTimeSlots().catch(e => console.warn("init loadTimeSlots error", e));
+    }, 100);
+
+    // Expose for debug if needed
+    window.__barbershop_timeslot = {
+        load: _loadTimeSlots,
+        cacheClear: () => cache.clear()
+    };
+
+})();
 </script>
+
 
 </body>
 </html>

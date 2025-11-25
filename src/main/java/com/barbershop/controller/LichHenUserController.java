@@ -5,7 +5,6 @@ import com.barbershop.repository.*;
 
 import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -32,7 +31,7 @@ public class LichHenUserController {
         return khRepo.findByAccount(acc);
     }
 
-    /** Tạo slot 08:00 → 20:00, mỗi 20 phút */
+    /** Tạo slot 08:00 → 20:00 mỗi 20 phút */
     private List<LocalTime> generateTimeSlots() {
         List<LocalTime> list = new ArrayList<>();
         LocalTime t = LocalTime.of(8, 0);
@@ -45,7 +44,7 @@ public class LichHenUserController {
         return list;
     }
 
-    /** Tổng thời gian thực hiện của các dịch vụ */
+    /** Tổng thời gian dịch vụ */
     private int getTotalDuration(List<Integer> dvIds) {
         if (dvIds == null || dvIds.isEmpty()) return 20;
 
@@ -54,6 +53,42 @@ public class LichHenUserController {
                 .filter(Objects::nonNull)
                 .mapToInt(DichVu::getThoiGianThucHien)
                 .sum();
+    }
+
+    /** KIỂM TRA TRÙNG LỊCH – ĐÃ FIX CHUẨN */
+    private boolean isOverlap(LocalDate day, LocalTime start,
+                              int manv, int duration, Integer excludeId) {
+
+        LocalTime end = start.plusMinutes(duration);
+
+        List<LichHen> booked = lichHenRepo.findByNhanVien_Manv(manv).stream()
+                .filter(lh -> lh.getNgayHen().equals(day))
+                .toList();
+
+        for (LichHen lh : booked) {
+
+            // ⭐ BỎ QUA lịch đang CHỈNH SỬA → luôn RẢNH
+            if (excludeId != null && lh.getMaLh() == excludeId)
+                continue;
+
+            int usedMinutes = lhDvRepo.findByLichHen_MaLh(lh.getMaLh())
+                    .stream()
+                    .mapToInt(x -> x.getDichVu().getThoiGianThucHien())
+                    .sum();
+
+            if (usedMinutes == 0) usedMinutes = 20;
+
+            LocalTime s = lh.getGioHen();
+            LocalTime e = s.plusMinutes(usedMinutes);
+
+            // ⭐ CÔNG THỨC OVERLAP CHUẨN
+            boolean overlap = start.isBefore(e) && end.isAfter(s);
+
+            if (overlap)
+                return true;
+        }
+
+        return false;
     }
 
     // ========================= LIST =========================
@@ -110,7 +145,7 @@ public class LichHenUserController {
 
         LocalDate d = LocalDate.parse(ngay);
 
-        // ===== FIX QUAN TRỌNG: nếu dvIds null → tự load dịch vụ cũ của lịch hẹn đang sửa =====
+        // Nếu dvIds rỗng và đang sửa lịch → load DV cũ
         if ((dvIds == null || dvIds.isEmpty()) && excludeId != null) {
             dvIds = lhDvRepo.findByLichHen_MaLh(excludeId)
                     .stream()
@@ -121,46 +156,17 @@ public class LichHenUserController {
         if (dvIds == null) dvIds = new ArrayList<>();
 
         int duration = getTotalDuration(dvIds);
-        if (duration == 0) duration = 20; // tối thiểu 20 phút
-
-        List<LocalTime> slots = generateTimeSlots();
-
-        List<LichHen> booked = lichHenRepo.findByNhanVien_Manv(manv).stream()
-                .filter(lh -> lh.getNgayHen().equals(d))
-                .toList();
 
         List<Map<String, Object>> result = new ArrayList<>();
 
-        for (LocalTime slot : slots) {
+        for (LocalTime slot : generateTimeSlots()) {
 
-            LocalTime slotEnd = slot.plusMinutes(duration);
-            boolean busy = false;
-
-            for (LichHen lh : booked) {
-
-                // bỏ qua lịch đang sửa
-                if (excludeId != null && lh.getMaLh() == excludeId) continue;
-
-                int usedMinutes = lhDvRepo.findByLichHen_MaLh(lh.getMaLh())
-                        .stream()
-                        .mapToInt(x -> x.getDichVu().getThoiGianThucHien())
-                        .sum();
-
-                if (usedMinutes == 0) usedMinutes = 20;
-
-                LocalTime s = lh.getGioHen();
-                LocalTime e = s.plusMinutes(usedMinutes);
-
-                boolean overlap = !(slotEnd.isBefore(s) || slot.isAfter(e));
-                if (overlap) {
-                    busy = true;
-                    break;
-                }
-            }
+            boolean busy = isOverlap(d, slot, manv, duration, excludeId);
 
             Map<String, Object> row = new HashMap<>();
             row.put("time", slot.toString());
             row.put("busy", busy);
+
             result.add(row);
         }
 
@@ -178,10 +184,18 @@ public class LichHenUserController {
 
         Account acc = (Account) session.getAttribute("user");
         if (acc == null) return "redirect:/login";
+
         KhachHang kh = getKhachHang(acc);
 
         if (LocalDateTime.of(ngayHen, gioHen).isBefore(LocalDateTime.now())) {
             session.setAttribute("errorAddMsg", "❌ Không thể đặt lịch trong quá khứ!");
+            return "redirect:/user/lichhen/add";
+        }
+
+        int duration = getTotalDuration(dvIds);
+
+        if (isOverlap(ngayHen, gioHen, manv, duration, null)) {
+            session.setAttribute("errorAddMsg", "❌ Khung giờ này đã có người đặt!");
             return "redirect:/user/lichhen/add";
         }
 
@@ -194,10 +208,10 @@ public class LichHenUserController {
 
         if (dvIds != null) {
             for (Integer dv : dvIds) {
-                LichHenDichVu item = new LichHenDichVu();
-                item.setLichHen(lh);
-                item.setDichVu(dichVuRepo.findById(dv).orElse(null));
-                lhDvRepo.save(item);
+                LichHenDichVu link = new LichHenDichVu();
+                link.setLichHen(lh);
+                link.setDichVu(dichVuRepo.findById(dv).orElse(null));
+                lhDvRepo.save(link);
             }
         }
 
@@ -213,12 +227,13 @@ public class LichHenUserController {
         if (acc == null) return "redirect:/login";
 
         LichHen lh = lichHenRepo.findById(id).orElse(null);
-        if (lh == null || lh.getKhachHang().getAccount().getId() != acc.getId()) {
+        if (lh == null || lh.getKhachHang().getAccount().getId() != acc.getId())
             return "redirect:/user/lichhen";
-        }
 
         List<Integer> selected = lhDvRepo.findByLichHen_MaLh(id)
-                .stream().map(x -> x.getDichVu().getMaDv()).toList();
+                .stream()
+                .map(x -> x.getDichVu().getMaDv())
+                .toList();
 
         model.addAttribute("lichHen", lh);
         model.addAttribute("listNhanVien", nvRepo.findAll());
@@ -245,6 +260,14 @@ public class LichHenUserController {
         LichHen lh = lichHenRepo.findById(maLh).orElse(null);
         if (lh == null) return "redirect:/user/lichhen";
 
+        int duration = getTotalDuration(dvIds);
+
+        // ⭐ excludeId = maLh để giờ đang sửa LUÔN rảnh
+        if (isOverlap(ngayHen, gioHen, nhanVien, duration, maLh)) {
+            session.setAttribute("errorMsg", "❌ Khung giờ bị trùng!");
+            return "redirect:/user/lichhen/edit/" + maLh;
+        }
+
         lh.setNgayHen(ngayHen);
         lh.setGioHen(gioHen);
         lh.setNhanVien(nvRepo.findById(nhanVien).orElse(null));
@@ -254,10 +277,10 @@ public class LichHenUserController {
 
         if (dvIds != null) {
             for (Integer dv : dvIds) {
-                LichHenDichVu ldv = new LichHenDichVu();
-                ldv.setLichHen(lh);
-                ldv.setDichVu(dichVuRepo.findById(dv).orElse(null));
-                lhDvRepo.save(ldv);
+                LichHenDichVu link = new LichHenDichVu();
+                link.setLichHen(lh);
+                link.setDichVu(dichVuRepo.findById(dv).orElse(null));
+                lhDvRepo.save(link);
             }
         }
 
