@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Thống kê doanh thu | Admin</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- FontAwesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+
+    <!-- ChartJS -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            background: #f4f6fb;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        .navbar {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .app-shell {
+            min-height: 100vh;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            background: #1e3c72;
+            min-height: calc(100vh - 56px);
+            color: #cbd5e1;
+        }
+
+        .sidebar a {
+            display: flex;
+            align-items: center;
+            color: #cbd5e1;
+            text-decoration: none;
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar a i {
+            width: 20px;
+        }
+        
+        .sidebar a:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            transform: translateX(4px);
+        }
+
+        .sidebar a.active {
+            background: #2563eb;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        /* ===== CONTENT ===== */
+        .content-wrapper {
+            padding: 24px;
+        }
+
+        .card {
+            border-radius: 14px;
+            border: none;
+        }
+
+        .table thead {
+            background: #2563eb;
+            color: #fff;
+        }
+
+        .stat-box {
+            background: #ffffff;
+            color: rgb(0, 0, 0);
+            border-radius: 12px;
+            padding: 18px;
+        }
+
+        .stat-box h5 {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .stat-box h4 {
+            font-weight: 600;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<nav class="navbar navbar-expand-lg navbar-light bg-white">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand fw-bold text-primary" href="/admin/home">
+            <i class="fa-solid fa-scissors me-2"></i>BARBERSHOP ADMIN
+        </a>
+
+        <div class="ms-auto dropdown">
+            <a class="nav-link dropdown-toggle fw-semibold" href="#" role="button"
+               data-bs-toggle="dropdown">
+                <i class="fa-regular fa-user me-1"></i> Admin
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                    <a class="dropdown-item" href="/logout">
+                        <i class="fa-solid fa-arrow-right-from-bracket me-1"></i> Đăng xuất
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="app-shell container-fluid">
+    <div class="row">
+
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="col-lg-2 col-md-3 sidebar p-3 d-none d-md-block">
+
+            <a href="/admin/home">
+                <i class="fa-solid fa-house me-2"></i>Trang chủ
+            </a>
+
+            <a href="/admin/nhanvien">
+                <i class="fa-solid fa-user-tie me-2"></i>Nhân viên
+            </a>
+
+            <a href="/admin/khachhang">
+                <i class="fa-solid fa-users me-2"></i>Khách hàng
+            </a>
+
+            <a href="/admin/dichvu">
+                <i class="fa-solid fa-spray-can-sparkles me-2"></i>Dịch vụ
+            </a>
+
+            <a href="/admin/lichhen">
+                <i class="fa-solid fa-calendar-check me-2"></i>Lịch hẹn
+            </a>
+
+            <a href="/admin/hoadon">
+                <i class="fa-solid fa-receipt me-2"></i>Hóa đơn
+            </a>
+
+            <a href="/admin/thongke">
+                <i class="fa-solid fa-chart-line me-2"></i>Doanh thu
+            </a>
+
+        </aside>
+
+        <!-- ===== CONTENT ===== -->
+        <main class="col-lg-10 col-md-9 content-wrapper">
+
+            <!-- Header -->
+            <div class="mb-4">
+                <h4 class="fw-semibold mb-1">Thống kê doanh thu theo năm</h4>
+                <p class="text-muted mb-0">
+                    Theo dõi doanh thu từng tháng và tổng doanh thu năm.
+                </p>
+            </div>
+
+            <!-- Bộ lọc + Tổng doanh thu -->
+            <div class="card shadow-sm p-3 mb-4">
+                <div class="row align-items-end g-3">
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Chọn năm</label>
+                        <select id="selectNam" class="form-select" onchange="changeYear()">
+                            <option th:each="y : ${#numbers.sequence(2022, 2030)}"
+                                    th:value="${y}"
+                                    th:selected="${y == nam}"
+                                    th:text="${y}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="stat-box">
+                            <h5>Tổng doanh thu năm</h5>
+                            <h4 th:text="${#numbers.formatDecimal(tongDoanhThu,0,'COMMA',0,'POINT')} + ' đ'">
+                            </h4>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Biểu đồ -->
+            <div class="card shadow-sm p-4 mb-4">
+                <h6 class="fw-semibold mb-3">Biểu đồ doanh thu theo tháng</h6>
+                <canvas id="chartDoanhThu" height="90"></canvas>
+            </div>
+
+</div>
+
+        </main>
+    </div>
+</div>
+
+<script>
+    function changeYear() {
+        const year = document.getElementById("selectNam").value;
+        window.location.href = "/admin/thongke?nam=" + year;
+    }
+
+    const nam = document.getElementById("selectNam").value;
+
+    fetch(`/admin/thongke/chart-data?nam=${nam}`)
+        .then(res => res.json())
+        .then(data => {
+
+            new Chart(document.getElementById("chartDoanhThu"), {
+                type: "bar",
+                data: {
+                    labels: data.thang,
+                    datasets: [{
+                        label: "Doanh thu (VNĐ)",
+                        data: data.doanhThu,
+                        backgroundColor: "#2563eb",
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+
+        });
+
+    // Tự động active menu
+    const currentPath = window.location.pathname;
+    document.querySelectorAll(".sidebar a").forEach(link => {
+        if (currentPath.startsWith(link.getAttribute("href"))) {
+            link.classList.add("active");
+        }
+    });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

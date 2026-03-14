@@ -35,7 +35,7 @@ public class RegisterController {
             session.removeAttribute("registerSuccess");
         }
 
-        return "register";
+        return "admin/register";
     }
 
     @PostMapping("/register")

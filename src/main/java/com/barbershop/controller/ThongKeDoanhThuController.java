@@ -60,7 +60,7 @@ public class ThongKeDoanhThuController {
         model.addAttribute("nam", nam);
         model.addAttribute("doanhThu", doanhThu);
 
-        return "thongke-doanhthu";
+        return "admin/thongke-doanhthu";
     }
 
     // ============= API JSON (nếu cần vẽ biểu đồ theo năm) =============
@@ -277,7 +277,7 @@ public class ThongKeDoanhThuController {
         model.addAttribute("topKhachHang", topKhachHang);
         model.addAttribute("paymentStats", paymentStats);
 
-        return "thongke-doanhthu-thang";
+        return "admin/thongke-doanhthu-thang";
     }
 
     // =============== XUẤT BÁO CÁO DOANH THU THÁNG RA PDF (iText 5) ===============

@@ -33,7 +33,7 @@ import com.itextpdf.text.Element;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfWriter;
-import com.itextpdf.text.pdf.BaseFont; // 🔹 THÊM DÒNG NÀY
+import com.itextpdf.text.pdf.BaseFont; 
 
 @Controller
 @RequestMapping("/admin/hoadon")
@@ -85,7 +85,7 @@ public class HoaDonController {
         model.addAttribute("toDate", toDate);
         model.addAttribute("method", method);
 
-        return "hoadon-list";
+        return "admin/hoadon-list";
     }
 
     // ==================== ADD FORM ====================
@@ -103,7 +103,7 @@ public class HoaDonController {
 
         model.addAttribute("hoaDon", new HoaDon());
         model.addAttribute("listLichHen", chuaCoHoaDon);
-        return "hoadon-add";
+        return "admin/hoadon-add";
     }
 
     // ==================== ADD (POST) ====================
@@ -124,7 +124,11 @@ public class HoaDonController {
         List<LichHenDichVu> ds = lichHenDichVuRepo.findByLichHen_MaLh(maLh);
 
         hd.tinhTongTien(ds);
-        hd.setNgayThanhToan(LocalDate.now());
+
+        LichHen lh = lichHenRepo.findById(maLh).orElse(null);
+        if (lh != null) {
+            hd.setNgayThanhToan(lh.getNgayHen());
+        }
 
         hoaDonRepo.save(hd);
 
@@ -141,7 +145,7 @@ public class HoaDonController {
 
         model.addAttribute("hoaDon", hd);
         model.addAttribute("listLichHen", lichHenRepo.findAll());
-        return "hoadon-edit";
+        return "admin/hoadon-edit";
     }
 
     // ==================== EDIT (POST) ====================
@@ -164,7 +168,7 @@ public class HoaDonController {
 
         List<LichHenDichVu> ds = lichHenDichVuRepo.findByLichHen_MaLh(maLh);
         existing.tinhTongTien(ds);
-        existing.setNgayThanhToan(LocalDate.now());
+        existing.setNgayThanhToan(lichHen.getNgayHen());
 
         hoaDonRepo.save(existing);
 
@@ -215,7 +219,7 @@ public class HoaDonController {
         model.addAttribute("hoaDon", hd);
         model.addAttribute("dsDichVu", dsDichVu);
         model.addAttribute("tongTienDv", tongTienDv);
-        return "hoadon-detail";
+        return "admin/hoadon-detail";
     }
 
     // ===========================================================
@@ -309,5 +313,21 @@ public class HoaDonController {
                 .ok()
                 .headers(headers)
                 .body(pdfBytes);
+    }
+    @GetMapping("/tongtien/{maLh}")
+    @ResponseBody
+    public double getTongTien(@PathVariable Integer maLh){
+
+        List<LichHenDichVu> ds = lichHenDichVuRepo.findByLichHen_MaLh(maLh);
+
+        double tong = 0;
+
+        for(LichHenDichVu dv : ds){
+            if(dv.getDichVu()!=null && dv.getDichVu().getGia()!=null){
+                tong += dv.getDichVu().getGia();
+            }
+        }
+
+        return tong;
     }
 }

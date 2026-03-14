@@ -37,7 +37,7 @@ public class KhachHangController {
         model.addAttribute("keyword", keyword);
         model.addAttribute("listKhachHang", list);
 
-        return "khachhang-list";
+        return "admin/khachhang-list";
     }
 
     // ===================== FORM THÊM =====================
@@ -47,7 +47,7 @@ public class KhachHangController {
             return "redirect:/login";
 
         model.addAttribute("khachHang", new KhachHang());
-        return "khachhang-add";
+        return "admin/khachhang-add";
     }
 
     // ===================== XỬ LÝ THÊM =====================
@@ -67,7 +67,7 @@ public class KhachHangController {
         KhachHang kh = khachHangRepo.findById(makh).orElse(null);
         model.addAttribute("khachHang", kh);
 
-        return "khachhang-edit";
+        return "admin/khachhang-edit";
     }
 
     // ===================== XỬ LÝ SỬA (ĐÃ FIX MẤT ACCOUNT) =====================

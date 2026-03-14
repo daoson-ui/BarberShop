@@ -16,7 +16,7 @@ public class LoginController {
     // Hiển thị trang login
     @GetMapping("/login")
     public String loginPage() {
-        return "login";
+        return "admin/login";
     }
 
     // Xử lý đăng nhập

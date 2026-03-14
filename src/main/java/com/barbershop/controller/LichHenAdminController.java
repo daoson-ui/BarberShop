@@ -10,10 +10,9 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.util.*;
 
 @Controller
@@ -36,23 +35,24 @@ public class LichHenAdminController {
     private DichVuRepository dichVuRepo;
 
     // =================== UTIL ===================
-
-    /** Tạo slot 08:00 → 20:00, mỗi 20 phút */
     private List<LocalTime> generateTimeSlots() {
-        List<LocalTime> list = new ArrayList<>();
-        LocalTime t = LocalTime.of(8, 0);
-        LocalTime end = LocalTime.of(20, 0);
 
-        while (!t.isAfter(end)) {
-            list.add(t);
-            t = t.plusMinutes(20);
+        List<LocalTime> list = new ArrayList<>();
+
+        LocalTime start = LocalTime.of(8,0);
+        LocalTime end = LocalTime.of(20,0);
+
+        while(!start.isAfter(end)){
+            list.add(start);
+            start = start.plusMinutes(20);
         }
+
         return list;
     }
 
-    /** Tổng thời gian thực hiện của các dịch vụ */
-    private int getTotalDuration(List<Integer> dvIds) {
-        if (dvIds == null || dvIds.isEmpty())
+    private int getTotalDuration(List<Integer> dvIds){
+
+        if(dvIds == null || dvIds.isEmpty())
             return 20;
 
         return dvIds.stream()
@@ -62,228 +62,329 @@ public class LichHenAdminController {
                 .sum();
     }
 
-    // ========================= LIST + BỘ LỌC =========================
+    // ========================= LIST =========================
+
     @GetMapping
     public String list(
-            @RequestParam(name = "keyword", required = false) String keyword,
-            @RequestParam(name = "fromDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
-            @RequestParam(name = "toDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
-            Model model,
-            HttpSession session) {
+            @RequestParam(required=false) String keyword,
 
-        if (session.getAttribute("user") == null)
+            @RequestParam(required=false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate ngayHen,
+
+            @RequestParam(required=false) String trangThai,
+
+            Model model,
+            HttpSession session){
+
+        if(session.getAttribute("user")==null)
             return "redirect:/login";
 
-        // Load flash message rồi xóa
-        Object success = session.getAttribute("successMsg");
-        Object error = session.getAttribute("errorMsg");
+        if(keyword!=null && keyword.trim().isEmpty())
+            keyword=null;
 
-        if (success != null) {
-            model.addAttribute("successMsg", success);
-            session.removeAttribute("successMsg");
-        }
-        if (error != null) {
-            model.addAttribute("errorMsg", error);
-            session.removeAttribute("errorMsg");
-        }
+        if(trangThai!=null && trangThai.trim().isEmpty())
+            trangThai=null;
 
-        // Chuẩn hóa keyword rỗng => null
-        if (keyword != null && keyword.trim().isEmpty()) {
-            keyword = null;
-        }
+        List<LichHen> list = lichHenRepo.searchForAdmin(
+                keyword,
+                ngayHen,
+                trangThai
+        );
 
-        // Lấy danh sách theo bộ lọc
-        List<LichHen> list = lichHenRepo.searchForAdmin(keyword, fromDate, toDate);
+        Map<Integer,List<LichHenDichVu>> mapDv = new HashMap<>();
 
-        // Map: maLh -> danh sách dịch vụ
-        Map<Integer, List<LichHenDichVu>> mapDv = new HashMap<>();
-        for (LichHen lh : list) {
+        for(LichHen lh : list){
+
             mapDv.put(
                     lh.getMaLh(),
-                    lhDvRepo.findByLichHen_MaLh(lh.getMaLh()));
+                    lhDvRepo.findByLichHen_MaLh(lh.getMaLh())
+            );
         }
 
-        model.addAttribute("listLichHen", list);
-        model.addAttribute("mapDichVu", mapDv);
+        model.addAttribute("listLichHen",list);
+        model.addAttribute("mapDichVu",mapDv);
 
-        // Đẩy lại filter để hiển thị trên form
-        model.addAttribute("keyword", keyword);
-        model.addAttribute("fromDate", fromDate);
-        model.addAttribute("toDate", toDate);
+        model.addAttribute("keyword",keyword);
+        model.addAttribute("ngayHen",ngayHen);
+        model.addAttribute("trangThai",trangThai);
 
-        return "lichhen-admin-list";
+        return "admin/lichhen-admin-list";
     }
+    // ========================= FORM ADD =========================
 
-    // ========================= FORM THÊM LỊCH HẸN (ADMIN)
-    // =========================
     @GetMapping("/add")
-    public String addForm(Model model, HttpSession session) {
+    public String addForm(Model model,HttpSession session){
 
-        if (session.getAttribute("user") == null)
+        if(session.getAttribute("user")==null)
             return "redirect:/login";
 
-        // Lấy flash error nếu có
-        Object error = session.getAttribute("errorAddMsg");
-        if (error != null) {
-            model.addAttribute("errorMsg", error);
-            session.removeAttribute("errorAddMsg");
-        }
+        model.addAttribute("listKhachHang",khRepo.findAll());
+        model.addAttribute("listNhanVien",nvRepo.findAll());
+        model.addAttribute("listDichVu",dichVuRepo.findAll());
 
-        model.addAttribute("listKhachHang", khRepo.findAll());
-        model.addAttribute("listNhanVien", nvRepo.findAll());
-        model.addAttribute("listDichVu", dichVuRepo.findAll());
-
-        return "lichhen-admin-add";
+        return "admin/lichhen-admin-add";
     }
 
-    // ========================= API LẤY GIỜ TRỐNG/BẬN (ADMIN)
-    // =========================
+    // ========================= API TIMESLOTS =========================
+
     @GetMapping("/api/timeslots")
     @ResponseBody
-    public List<Map<String, Object>> apiTimeSlots(
+    public List<Map<String,Object>> apiTimeSlots(
             @RequestParam("manv") int manv,
             @RequestParam("ngay") String ngay,
-            @RequestParam(name = "dvIds", required = false) List<Integer> dvIds,
-            @RequestParam(name = "excludeId", required = false) Integer excludeId) {
+            @RequestParam(name="dvIds",required=false) List<Integer> dvIds,
+            @RequestParam(name="excludeId",required=false) Integer excludeId){
 
-        LocalDate d = LocalDate.parse(ngay); // 2025-11-25
+        LocalDate date = LocalDate.parse(ngay);
 
-        // Nếu đang sửa lịch hẹn mà không gửi dvIds lên thì lấy từ DB
-        if ((dvIds == null || dvIds.isEmpty()) && excludeId != null) {
+        if((dvIds==null || dvIds.isEmpty()) && excludeId!=null){
+
             dvIds = lhDvRepo.findByLichHen_MaLh(excludeId)
                     .stream()
                     .map(x -> x.getDichVu().getMaDv())
                     .toList();
         }
 
-        if (dvIds == null)
+        if(dvIds==null)
             dvIds = new ArrayList<>();
 
         int duration = getTotalDuration(dvIds);
-        if (duration == 0)
-            duration = 20;
+
+        if(duration==0)
+            duration=20;
 
         List<LocalTime> slots = generateTimeSlots();
 
-        // Lấy tất cả lịch hẹn của NV trong ngày đó
-        List<LichHen> booked = lichHenRepo.findByNhanVien_Manv(manv).stream()
-                .filter(lh -> lh.getNgayHen().equals(d))
+        List<LichHen> booked = lichHenRepo.findByNhanVien_Manv(manv)
+                .stream()
+                .filter(lh -> date.equals(lh.getNgayHen()))
                 .toList();
 
-        List<Map<String, Object>> result = new ArrayList<>();
+        List<Map<String,Object>> result = new ArrayList<>();
 
-        for (LocalTime slot : slots) {
+        for(LocalTime slot : slots){
 
             LocalTime slotEnd = slot.plusMinutes(duration);
-            boolean busy = false;
 
-            for (LichHen lh : booked) {
+            boolean busy=false;
 
-                // bỏ qua lịch đang sửa
-                if (excludeId != null && Objects.equals(lh.getMaLh(), excludeId))
+            for(LichHen lh : booked){
+
+                if(excludeId!=null && Objects.equals(lh.getMaLh(),excludeId))
                     continue;
 
                 int usedMinutes = lhDvRepo.findByLichHen_MaLh(lh.getMaLh())
                         .stream()
-                        .mapToInt(x -> x.getDichVu().getThoiGianThucHien())
+                        .mapToInt(x->x.getDichVu().getThoiGianThucHien())
                         .sum();
 
-                if (usedMinutes == 0)
-                    usedMinutes = 20;
+                if(usedMinutes==0)
+                    usedMinutes=20;
 
-                LocalTime s = lh.getGioHen();
-                LocalTime e = s.plusMinutes(usedMinutes);
+                LocalTime start = lh.getGioHen();
+                LocalTime end = start.plusMinutes(usedMinutes);
 
-                boolean overlap = !(slotEnd.isBefore(s) || slot.isAfter(e));
-                if (overlap) {
-                    busy = true;
+                boolean overlap = slot.isBefore(end) && slotEnd.isAfter(start);
+
+                if(overlap){
+                    busy=true;
                     break;
                 }
             }
 
-            Map<String, Object> row = new HashMap<>();
-            row.put("time", slot.toString());
-            row.put("busy", busy);
+            Map<String,Object> row = new HashMap<>();
+
+            row.put("time",slot.toString());
+            row.put("busy",busy);
+
             result.add(row);
         }
 
         return result;
     }
 
-    // ========================= XỬ LÝ THÊM LỊCH HẸN (ADMIN)
-    // =========================
+    // ========================= ADD =========================
+
     @PostMapping("/add")
     @Transactional
     public String add(
             @RequestParam LocalDate ngayHen,
             @RequestParam LocalTime gioHen,
-            @RequestParam int makh,
+            @RequestParam Integer makh,
             @RequestParam int manv,
-            @RequestParam(name = "dichVuChon", required = false) List<Integer> dvIds,
-            HttpSession session) {
+            @RequestParam(name="dichVuChon",required=false) List<Integer> dvIds,
+            HttpSession session,
+            RedirectAttributes ra){
 
-        if (session.getAttribute("user") == null)
+        if(session.getAttribute("user")==null)
             return "redirect:/login";
 
-        // Không cho đặt lịch trong quá khứ
-        if (LocalDateTime.of(ngayHen, gioHen).isBefore(LocalDateTime.now())) {
-            session.setAttribute("errorAddMsg", "❌ Không thể tạo lịch hẹn trong quá khứ!");
+        if(LocalDateTime.of(ngayHen,gioHen).isBefore(LocalDateTime.now())){
+
+            ra.addFlashAttribute("errorMsg","❌ Không thể tạo lịch trong quá khứ!");
             return "redirect:/admin/lichhen/add";
         }
 
         KhachHang kh = khRepo.findById(makh).orElse(null);
         NhanVien nv = nvRepo.findById(manv).orElse(null);
 
-        if (kh == null || nv == null) {
-            session.setAttribute("errorAddMsg", "❌ Khách hàng hoặc nhân viên không hợp lệ!");
+        if(kh == null || nv == null){
+
+            ra.addFlashAttribute("errorMsg","❌ Khách hàng hoặc nhân viên không hợp lệ!");
             return "redirect:/admin/lichhen/add";
         }
 
-        // Tạo lịch hẹn
         LichHen lh = new LichHen();
+
         lh.setNgayHen(ngayHen);
         lh.setGioHen(gioHen);
         lh.setKhachHang(kh);
         lh.setNhanVien(nv);
+
         lichHenRepo.save(lh);
 
-        // Gắn dịch vụ
-        if (dvIds != null) {
-            for (Integer dvId : dvIds) {
+        if(dvIds != null){
+
+            for(Integer dvId : dvIds){
+
                 DichVu dv = dichVuRepo.findById(dvId).orElse(null);
-                if (dv == null)
-                    continue;
+
+                if(dv == null) continue;
 
                 LichHenDichVu item = new LichHenDichVu();
+
                 item.setLichHen(lh);
                 item.setDichVu(dv);
+
                 lhDvRepo.save(item);
             }
         }
 
-        session.setAttribute("successMsg", "✔ Đã tạo lịch hẹn cho khách hàng " + kh.getHoTen());
+        ra.addFlashAttribute("successMsg",
+                "✔ Đã tạo lịch hẹn cho khách hàng " + kh.getHoTen());
+
         return "redirect:/admin/lichhen";
     }
 
-    // ========================= DELETE =========================
-    @GetMapping("/delete/{id}")
-    @Transactional
-    public String delete(@PathVariable int id, HttpSession session) {
+
+    @GetMapping("/edit/{id}")
+    public String editForm(@PathVariable int id,
+                        Model model,
+                        HttpSession session){
+
+        if(session.getAttribute("user")==null)
+            return "redirect:/login";
 
         LichHen lh = lichHenRepo.findById(id).orElse(null);
 
-        if (lh == null) {
-            session.setAttribute("errorMsg", "❌ Lịch hẹn không tồn tại!");
+        if(lh==null)
+            return "redirect:/admin/lichhen";
+
+        List<LichHenDichVu> dvList =
+                lhDvRepo.findByLichHen_MaLh(id);
+
+        List<Integer> selectedIds =
+                dvList.stream()
+                        .map(x -> x.getDichVu().getMaDv())
+                        .toList();
+
+        model.addAttribute("lichHen",lh);
+        model.addAttribute("listNhanVien",nvRepo.findAll());
+        model.addAttribute("listDichVu",dichVuRepo.findAll());
+        model.addAttribute("selectedDvIds",selectedIds);
+
+        return "admin/lichhen-admin-edit";
+    } 
+
+    @PostMapping("/edit")
+    @Transactional
+    public String edit(
+            @RequestParam int maLh,
+            @RequestParam LocalDate ngayHen,
+            @RequestParam LocalTime gioHen,
+            @RequestParam int nhanVien,
+            @RequestParam(name="dichVuChon",required=false) List<Integer> dvIds,
+            HttpSession session,
+            RedirectAttributes ra){
+
+        if(session.getAttribute("user")==null)
+            return "redirect:/login";
+
+        LichHen lh = lichHenRepo.findById(maLh).orElse(null);
+
+        if(lh==null){
+
+            ra.addFlashAttribute("errorMsg","❌ Lịch hẹn không tồn tại");
             return "redirect:/admin/lichhen";
         }
 
-        // Xóa dịch vụ trước
-        lhDvRepo.deleteByLichHen_MaLh(id);
+        if(LocalDateTime.of(ngayHen,gioHen).isBefore(LocalDateTime.now())){
 
-        // Xóa lịch hẹn
+            ra.addFlashAttribute("errorMsg","❌ Không thể chỉnh sửa về quá khứ!");
+            return "redirect:/admin/lichhen/edit/"+maLh;
+        }
+
+        NhanVien nv = nvRepo.findById(nhanVien).orElse(null);
+
+        if(nv==null){
+
+            ra.addFlashAttribute("errorMsg","❌ Nhân viên không hợp lệ!");
+            return "redirect:/admin/lichhen/edit/"+maLh;
+        }
+
+        lh.setNgayHen(ngayHen);
+        lh.setGioHen(gioHen);
+        lh.setNhanVien(nv);
+
+        lichHenRepo.save(lh);
+
+        // Xóa dịch vụ cũ
+        lhDvRepo.deleteByLichHen_MaLh(maLh);
+
+        // Thêm lại dịch vụ mới
+        if(dvIds!=null){
+
+            for(Integer dvId:dvIds){
+
+                DichVu dv=dichVuRepo.findById(dvId).orElse(null);
+
+                if(dv==null) continue;
+
+                LichHenDichVu item=new LichHenDichVu();
+
+                item.setLichHen(lh);
+                item.setDichVu(dv);
+
+                lhDvRepo.save(item);
+            }
+        }
+
+        ra.addFlashAttribute("successMsg",
+                "✔ Đã cập nhật lịch hẹn thành công");
+
+        return "redirect:/admin/lichhen";
+    }
+    // ========================= DELETE =========================
+
+    @GetMapping("/delete/{id}")
+    @Transactional
+    public String delete(@PathVariable int id,
+                         HttpSession session,
+                         RedirectAttributes ra){
+
+        LichHen lh = lichHenRepo.findById(id).orElse(null);
+
+        if(lh == null){
+
+            ra.addFlashAttribute("errorMsg","❌ Lịch hẹn không tồn tại!");
+            return "redirect:/admin/lichhen";
+        }
+
+    lhDvRepo.deleteByLichHen_MaLh(id);
         lichHenRepo.deleteById(id);
 
-        session.setAttribute("successMsg", "✔ Đã xóa lịch hẹn thành công!");
+        ra.addFlashAttribute("successMsg","✔ Đã xóa lịch hẹn thành công!");
 
         return "redirect:/admin/lichhen";
     }

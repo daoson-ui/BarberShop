@@ -45,7 +45,7 @@ public class NhanVienController {
 
         model.addAttribute("keyword", keyword);
         model.addAttribute("listNhanVien", list);
-        return "nhanvien-list";
+        return "admin/nhanvien-list";
     }
 
     // =================== FORM THÊM ====================
@@ -56,7 +56,7 @@ public class NhanVienController {
 
         model.addAttribute("nhanVien", new NhanVien());
         model.addAttribute("listCaLam", caLamRepo.findAll());
-        return "nhanvien-add";
+        return "admin/nhanvien-add";
     }
 
     // =================== XỬ LÝ THÊM (TỰ TẠO ACCOUNT STAFF) ====================
@@ -114,7 +114,7 @@ public class NhanVienController {
 
         model.addAttribute("nhanVien", nv);
         model.addAttribute("listCaLam", caLamRepo.findAll());
-        return "nhanvien-edit";
+        return "admin/nhanvien-edit";
     }
 
     // =================== XỬ LÝ SỬA (KHÔNG MẤT ACCOUNT_ID) ====================

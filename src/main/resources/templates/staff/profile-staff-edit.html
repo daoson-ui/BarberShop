@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+<meta charset="UTF-8">
+<title>Chỉnh sửa thông tin nhân viên</title>
+
+<!-- Bootstrap -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- FontAwesome -->
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+
+body{
+    background:#f4f6fb;
+    font-family:"Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Navbar */
+
+.navbar-brand{
+    font-weight:700;
+}
+
+/* Profile card */
+
+.profile-card{
+    border:none;
+    border-radius:18px;
+}
+
+.profile-avatar{
+    width:120px;
+    height:120px;
+    border-radius:50%;
+    background:#dee2e6;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:50px;
+    margin:auto;
+}
+
+.profile-info i{
+    width:25px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+
+<nav class="navbar navbar-dark bg-dark shadow-sm">
+    <div class="container">
+        <a class="navbar-brand mx-auto" href="/staff/home">
+            <i class="fa-solid fa-scissors me-2"></i>
+            King Barber Staff
+        </a>
+    </div>
+</nav>
+
+
+<!-- CONTENT -->
+
+<div class="container mt-5">
+
+<div class="row justify-content-center">
+
+<div class="col-md-6">
+
+<div class="card shadow profile-card">
+
+<div class="card-body p-4">
+
+<!-- AVATAR -->
+
+<div class="profile-avatar mb-3">
+<i class="fa-solid fa-user"></i>
+</div>
+
+<h4 class="text-center mb-4">
+Chỉnh sửa thông tin nhân viên
+</h4>
+
+<hr>
+
+<!-- FORM -->
+
+<form th:action="@{/staff/profile/update}"
+      th:object="${nhanVien}"
+      method="post">
+
+<input type="hidden" th:field="*{manv}">
+
+<!-- HỌ TÊN -->
+
+<div class="mb-3 profile-info">
+
+<label class="form-label">
+<i class="fa-solid fa-id-card"></i>
+Họ tên
+</label>
+
+<input type="text"
+class="form-control"
+th:field="*{hoTen}"
+placeholder="Nhập họ tên"
+required>
+
+</div>
+
+<!-- SỐ ĐIỆN THOẠI -->
+
+<div class="mb-3 profile-info">
+
+<label class="form-label">
+<i class="fa-solid fa-phone"></i>
+Số điện thoại
+</label>
+
+<input type="text"
+class="form-control"
+th:field="*{sdt}"
+placeholder="Nhập số điện thoại"
+required>
+
+</div>
+
+<!-- GIỚI TÍNH -->
+
+<div class="mb-3 profile-info">
+
+<label class="form-label">
+<i class="fa-solid fa-venus-mars"></i>
+Giới tính
+</label>
+
+<select class="form-select" th:field="*{gioiTinh}">
+
+<option value="Nam">Nam</option>
+<option value="Nữ">Nữ</option>
+
+</select>
+
+</div>
+
+<!-- CHỨC VỤ -->
+
+<div class="mb-3 profile-info">
+
+<label class="form-label">
+<i class="fa-solid fa-user-tie"></i>
+Chức vụ
+</label>
+
+<input type="text"
+class="form-control"
+th:field="*{chucVu}"
+placeholder="Nhập chức vụ">
+
+</div>
+
+<!-- BUTTON -->
+
+<div class="text-center mt-4">
+
+<a href="/staff/profile"
+class="btn btn-secondary me-2">
+
+<i class="fa-solid fa-arrow-left"></i>
+Quay lại
+
+</a>
+
+<button type="submit"
+class="btn btn-primary">
+
+<i class="fa-solid fa-save"></i>
+Lưu thay đổi
+
+</button>
+
+</div>
+
+</form>
+
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</body>
+</html>

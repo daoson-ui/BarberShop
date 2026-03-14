@@ -14,12 +14,19 @@ public class LichHen {
     @Column(name = "ma_lh")
     private Integer maLh;
 
-    // TÁCH thành 2 cột: ngay_hen (DATE), gio_hen (TIME)
+    // ngày hẹn
     @Column(name = "ngay_hen")
     private LocalDate ngayHen;
 
+    // giờ hẹn
     @Column(name = "gio_hen")
     private LocalTime gioHen;
+
+    // trạng thái lịch
+    @Column(name = "trang_thai")
+    private String trangThai = "Chờ";
+
+    // ================= RELATION =================
 
     @ManyToOne
     @JoinColumn(name = "makh")
@@ -32,7 +39,8 @@ public class LichHen {
     @OneToMany(mappedBy = "lichHen", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<LichHenDichVu> dichVus;
 
-    // getters / setters
+    // ================= GETTER / SETTER =================
+
     public Integer getMaLh() {
         return maLh;
     }
@@ -55,6 +63,14 @@ public class LichHen {
 
     public void setGioHen(LocalTime gioHen) {
         this.gioHen = gioHen;
+    }
+
+    public String getTrangThai() {
+        return trangThai;
+    }
+
+    public void setTrangThai(String trangThai) {
+        this.trangThai = trangThai;
     }
 
     public KhachHang getKhachHang() {

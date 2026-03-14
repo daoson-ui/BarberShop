@@ -38,7 +38,7 @@ public class LichHenDichVuController {
         model.addAttribute("list", list);
         model.addAttribute("maLh", maLh);
 
-        return "lichhen-dichvu-list";
+        return "admin/lichhen-dichvu-list";
     }
 
     // =================== ADD FORM ===================
@@ -55,7 +55,7 @@ public class LichHenDichVuController {
         model.addAttribute("obj", obj);
         model.addAttribute("listDichVu", dichVuRepo.findAll());
 
-        return "lichhen-dichvu-add";
+        return "admin/lichhen-dichvu-add";
     }
 
     // =================== ADD (POST) ===================
@@ -68,7 +68,7 @@ public class LichHenDichVuController {
             model.addAttribute("error", "⚠ Dịch vụ này đã tồn tại trong lịch hẹn!");
             model.addAttribute("obj", obj);
             model.addAttribute("listDichVu", dichVuRepo.findAll());
-            return "lichhen-dichvu-add";
+            return "admin/lichhen-dichvu-add";
         }
 
         return "redirect:/admin/lichhen-dichvu/" + obj.getLichHen().getMaLh();
@@ -89,7 +89,7 @@ public class LichHenDichVuController {
         model.addAttribute("obj", obj);
         model.addAttribute("listDichVu", dichVuRepo.findAll());
 
-        return "lichhen-dichvu-edit";
+        return "admin/lichhen-dichvu-edit";
     }
 
     // =================== EDIT (POST) ===================

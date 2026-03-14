@@ -40,7 +40,7 @@ public class AdminController {
         long tongKhachHang = khachHangRepository.count();
 
         LocalDate today = LocalDate.now();
-        long lichHenHomNay = lichHenRepository.countByNgayHen(today);
+        long lichHenHomNay = lichHenRepository.countToday(today);
 
         int year = today.getYear();
         int month = today.getMonthValue();
@@ -54,6 +54,6 @@ public class AdminController {
         model.addAttribute("lichHenHomNay", lichHenHomNay);
         model.addAttribute("doanhThuThang", doanhThuThang);
 
-        return "admin-dashboard";
+        return "admin/admin-dashboard";
     }
 }

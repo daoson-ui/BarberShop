@@ -26,6 +26,16 @@ public class DichVu {
     @Column(name = "thoi_gian_thuc_hien")
     private Integer thoiGianThucHien; // phút
 
+    @Column(name = "hinh_anh")
+    private String hinhAnh;
+
+    public String getHinhAnh() {
+        return hinhAnh;
+    }
+
+    public void setHinhAnh(String hinhAnh) {
+        this.hinhAnh = hinhAnh;
+    }
     // Getter – Setter
     public Integer getMaDv() {
         return maDv;
